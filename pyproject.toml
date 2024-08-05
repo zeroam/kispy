@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kispy"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Python SDK for Korea Investment & Securities (KIS) Developer API"
 license = "MIT"
 authors = ["zeroam <imdff0803@gmail.com>"]
@@ -22,6 +22,12 @@ pydantic = "^2.8.2"
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.5.6"
 pre-commit = "^3.8.0"
+types-requests = "^2.32.0.20240712"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.2"
+pytest-mock = "^3.14.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -45,7 +51,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["feynman_api"]
+known-first-party = ["kispy"]
 
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
