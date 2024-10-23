@@ -9,7 +9,8 @@ from kispy.exceptions import KispyException
 def auth_api():
     return AuthAPI(
         app_key="app_key",
-        app_secret="app_secret",
+        secret="app_secret",
+        account_no="account_no-01",
         is_real=True,
     )
 
