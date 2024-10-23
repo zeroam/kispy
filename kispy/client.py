@@ -14,10 +14,7 @@ logger = logging.getLogger(__name__)
 class KisClient:
     def __init__(
         self,
-        app_key: str,
-        app_secret: str,
-        account_no: str,
-        is_real: bool = False,
+        auth: AuthAPI,
     ) -> None:
         """KIS API 클라이언트를 초기화합니다.
 
@@ -36,8 +33,8 @@ class KisClient:
         Example:
             >>> client = KISClient("your_app_key", "your_app_secret", "5000000000-01")
         """
-        self._url = REAL_URL if is_real else VIRTUAL_URL
-        self._auth = AuthAPI(app_key=app_key, app_secret=app_secret, is_real=is_real, account_no=account_no)
+        self._url = REAL_URL if auth.is_real else VIRTUAL_URL
+        self._auth = auth
         self.domestic_stock = DomesticStock(auth=self._auth)
         self.overseas_stock = OverseasStock(auth=self._auth)
 

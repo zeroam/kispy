@@ -27,13 +27,13 @@ class AuthAPI:
     def __init__(
         self,
         app_key: str,
-        app_secret: str,
-        is_real: bool,
+        secret: str,
         account_no: str,
+        is_real: bool,
     ):
         self._url = REAL_URL if is_real else VIRTUAL_URL
         self.app_key = app_key
-        self.app_secret = app_secret
+        self.app_secret = secret
         self.is_real = is_real
         self.cano, self.acnt_prdt_cd = account_no.split("-")
         self._token: Token | None = None
