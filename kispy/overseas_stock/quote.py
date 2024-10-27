@@ -2,6 +2,8 @@
 - 기본적인 시세 정보 조회 (현재가, 호가, 체결, 일별 시세 등)
 """
 
+from datetime import datetime, timedelta
+
 import requests
 
 from kispy.auth import AuthAPI
@@ -52,13 +54,8 @@ class QuoteAPI:
         path = "uapi/overseas-price/v1/quotations/price"
         url = f"{self._url}/{path}"
 
-        headers = {
-            "content-type": "application/json",
-            "authorization": f"Bearer {self._auth.access_token}",
-            "appkey": self._auth.app_key,
-            "appsecret": self._auth.app_secret,
-            "tr_id": "HHDFS00000300",
-        }
+        headers = self._auth.get_header()
+        headers["tr_id"] = "HHDFS00000300"
         # TODO: symbol 기준으로 거래소 코드를 가져오는 함수 추가하기
         params = {
             "AUTH": "",
@@ -69,3 +66,73 @@ class QuoteAPI:
         resp = self._request(method="get", url=url, headers=headers, params=params)
         # TODO: resp 타입 정의하기
         return float(resp.json["output"]["last"])
+
+    def get_stock_price_history(
+        self,
+        symbol: str,
+        exchange: str,
+        start_date: str,
+        end_date: str | None = None,
+        period: str = "D",
+        is_adjust: bool = False,
+    ) -> list[dict]:
+        """해외주식 기간별시세[v1_해외주식-010]
+        Args:
+            symbol (str): 종목코드
+            start_date (str): 조회시작일자 ("YYYY-MM-DD" 형식)
+            end_date (str): 조회종료일자 ("YYYY-MM-DD" 형식)
+            period (str): 조회기간, 기본값은 "D" (일) (옵션: "D" (일), "W" (주), "M" (월))
+            is_adjust (bool): 수정주가 여부, 기본값은 False
+
+        Returns:
+            list[dict]: 주식 기간별 시세 (시간 역순 정렬)
+        """
+        period_map = {"D": "0", "W": "1", "M": "2"}
+        if period not in period_map:
+            raise ValueError(f"Invalid period: {period}")
+
+        path = "uapi/overseas-price/v1/quotations/dailyprice"
+        url = f"{self._url}/{path}"
+
+        headers = self._auth.get_header()
+        headers["tr_id"] = "HHDFS76240000"
+
+        parsed_start_date = self._parse_date(start_date)
+        parsed_end_date = min(
+            self._parse_date(end_date or datetime.now().strftime("%Y-%m-%d")),
+            datetime.now(),
+        )
+
+        result: list[dict] = []
+        cur_end_date = parsed_end_date
+        while cur_end_date >= parsed_start_date:
+            resp = self._request(
+                "GET",
+                url,
+                headers=headers,
+                params={
+                    "AUTH": "",
+                    "EXCD": exchange,
+                    "SYMB": symbol,
+                    "GUBN": period_map[period],
+                    "BYMD": cur_end_date.strftime("%Y%m%d"),
+                    "MODP": "1" if is_adjust else "0",
+                    "KEYB": "",
+                },
+            )
+
+            items = [
+                data
+                for data in resp.json["output2"]
+                if data and datetime.strptime(data["xymd"], "%Y%m%d") >= parsed_start_date
+            ]
+            if not items:
+                break
+
+            result.extend(items)
+            cur_end_date = datetime.strptime(items[-1]["xymd"], "%Y%m%d") - timedelta(days=1)
+
+        return result
+
+    def _parse_date(self, date_str: str) -> datetime:
+        return datetime.strptime(date_str, "%Y-%m-%d")
