@@ -74,18 +74,27 @@ class QuoteAPI:
         start_date: str,
         end_date: str | None = None,
         period: str = "D",
-        is_adjust: bool = False,
+        is_adjust: bool = True,
+        desc: bool = False,
     ) -> list[dict]:
         """해외주식 기간별시세[v1_해외주식-010]
+        https://apiportal.koreainvestment.com/apiservice/apiservice-oversea-stock-quotations#L_0e9fb2ba-bbac-4735-925a-a35e08c9a790
+
         Args:
             symbol (str): 종목코드
+            exchange (str): 거래소코드 (
+                HKS : 홍콩, NYS : 뉴욕, NAS : 나스닥, AMS : 아멕스, TSE : 도쿄,
+                SHS : 상해, SZS : 심천, SHI : 상해지수, SZI : 심천지수, HSX : 호치민, HNX : 하노이,
+                BAY : 뉴욕(주간), BAQ : 나스닥(주간), BAA : 아멕스(주간)
+            )
             start_date (str): 조회시작일자 ("YYYY-MM-DD" 형식)
             end_date (str): 조회종료일자 ("YYYY-MM-DD" 형식)
             period (str): 조회기간, 기본값은 "D" (일) (옵션: "D" (일), "W" (주), "M" (월))
-            is_adjust (bool): 수정주가 여부, 기본값은 False
+            is_adjust (bool): 수정주가 여부, 기본값은 True
+            desc (bool): 시간 역순 정렬 여부, 기본값은 False
 
         Returns:
-            list[dict]: 주식 기간별 시세 (시간 역순 정렬)
+            list[dict]: 주식 기간별 시세
         """
         period_map = {"D": "0", "W": "1", "M": "2"}
         if period not in period_map:
@@ -132,6 +141,8 @@ class QuoteAPI:
             result.extend(items)
             cur_end_date = datetime.strptime(items[-1]["xymd"], "%Y%m%d") - timedelta(days=1)
 
+        if not desc:
+            result.reverse()
         return result
 
     def _parse_date(self, date_str: str) -> datetime:

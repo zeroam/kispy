@@ -52,7 +52,7 @@ class QuoteAPI:
         start_date: str,
         end_date: str | None = None,
         period: str = "D",
-        is_adjust: bool = False,
+        is_adjust: bool = True,
     ) -> list[dict]:
         """
         국내주식기간별시세(일/주/월/년) API입니다.
@@ -62,7 +62,7 @@ class QuoteAPI:
             start_date (str): 조회시작일자 ("YYYY-MM-DD" 형식)
             end_date (str | None): 조회종료일자 ("YYYY-MM-DD" 형식), 기본값은 오늘
             period (str): 조회기간, 기본값은 "D" (일) (옵션: "D" (일), "W" (주), "M" (월), "Y" (년))
-            is_adjust (bool): 수정주가 여부, 기본값은 False
+            is_adjust (bool): 수정주가 여부, 기본값은 True
 
         Returns:
             list[dict]: 주식 기간별 시세 (시간 역순 정렬)

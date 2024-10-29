@@ -46,7 +46,17 @@ def test_get_stock_price_history_with_end_date_future(auth: AuthAPI):
 
 def test_get_stock_price_history_with_not_exists_in_start_date(auth: AuthAPI):
     quote = KisClient(auth).overseas_stock.quote
+    # 20070820 ~ 20070831
     resp = quote.get_stock_price_history("AAPL", "NAS", "1960-01-01", "2007-09-01")
+
+    assert len(resp) == 10
+    assert resp[0]["xymd"] == "20070820"
+
+
+def test_get_stock_price_history_with_asc(auth: AuthAPI):
+    quote = KisClient(auth).overseas_stock.quote
+    # 20070820 ~ 20070831
+    resp = quote.get_stock_price_history("AAPL", "NAS", "1960-01-01", "2007-09-01", desc=True)
 
     assert len(resp) == 10
     assert resp[0]["xymd"] == "20070831"
