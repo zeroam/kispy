@@ -59,7 +59,7 @@ class OrderAPI(BaseAPI):
         body = {
             "CANO": self._auth.cano,
             "ACNT_PRDT_CD": self._auth.acnt_prdt_cd,
-            "OVRS_EXCG_CD": "NASD",  # 나스닥
+            "OVRS_EXCG_CD": exchange_code,
             "PDNO": symbol,
             "ORD_QTY": str(quantity),
             "OVRS_ORD_UNPR": str(price),
@@ -132,7 +132,7 @@ class OrderAPI(BaseAPI):
         body = {
             "CANO": self._auth.cano,
             "ACNT_PRDT_CD": self._auth.acnt_prdt_cd,
-            "OVRS_EXCG_CD": "NASD",  # 나스닥
+            "OVRS_EXCG_CD": exchange_code,
             "PDNO": symbol,
             "ORD_QTY": str(quantity),
             "OVRS_ORD_UNPR": str(price),
