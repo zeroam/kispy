@@ -11,10 +11,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 requests = "^2.32.3"
 pydantic = "^2.8.2"
 
@@ -23,6 +24,7 @@ pydantic = "^2.8.2"
 ruff = "^0.5.6"
 pre-commit = "^3.8.0"
 types-requests = "^2.32.0.20240712"
+mypy = "^1.13.0"
 
 
 [tool.poetry.group.test.dependencies]

@@ -25,8 +25,21 @@ class OrderAPI:
         custom_resp.raise_for_status()
         return custom_resp
 
-    def buy(self, symbol: str, exchange: str, quantity: int, price: float) -> dict:
+    def buy(self, symbol: str, exchange_code: str, quantity: int, price: float) -> dict:
         """해외주식주문[v1_해외주식-001] - 매수
+
+        Args:
+            symbol (str): 종목코드
+            exchange_code (str): 거래소 코드 (
+                NASD : 나스닥, NYSE : 뉴욕, AMEX : 아멕스,
+                SEHK : 홍콩, SHAA : 중국상해, SZAA : 중국심천,
+                TKSE : 일본, HASE : 베트남 하노이, VNSE : 베트남 호치민
+            )
+            quantity (int): 주문수량
+            price (float): 주문단가
+
+        Returns:
+            dict: 주문 결과
 
         해외주식 주문 API입니다.
 
@@ -47,15 +60,12 @@ class OrderAPI:
 
         ※ 종목코드 마스터파일 파이썬 정제코드는 한국투자증권 Github 참고 부탁드립니다.
         https://github.com/koreainvestment/open-trading-api/tree/main/stocks_info
-
-
-        - 주문단가와 체결 단가는 다를 수 있음
         """
         # 현재는 미국 매수만 가능
         path = "uapi/overseas-stock/v1/trading/order"
         url = f"{self._url}/{path}"
 
-        tr_id = _get_buy_tr_id(exchange, self._auth.is_real)
+        tr_id = _get_buy_tr_id(exchange_code, self._auth.is_real)
 
         headers = self._auth.get_header()
         headers["tr_id"] = tr_id
@@ -75,11 +85,37 @@ class OrderAPI:
         # TODO: resp 타입 정의하기
         return resp.json["output"]  # type: ignore[no-any-return]
 
-    def buy_market(self, symbol: str, exchange: str, quantity: int) -> dict:
-        return self.buy(symbol, exchange, quantity, 0)
+    def buy_market(self, symbol: str, exchange_code: str, quantity: int) -> dict:
+        """시장가 매수
+        Args:
+            symbol (str): 종목코드
+            exchange_code (str): 거래소 코드 (
+                NASD : 나스닥, NYSE : 뉴욕, AMEX : 아멕스,
+                SEHK : 홍콩, SHAA : 중국상해, SZAA : 중국심천,
+                TKSE : 일본, HASE : 베트남 하노이, VNSE : 베트남 호치민
+            )
+            quantity (int): 주문수량
 
-    def sell(self, symbol: str, exchange: str, quantity: int, price: float) -> dict:
+        Returns:
+            dict: 주문 결과
+        """
+        return self.buy(symbol, exchange_code, quantity, 0)
+
+    def sell(self, symbol: str, exchange_code: str, quantity: int, price: float) -> dict:
         """해외주식주문[v1_해외주식-001] - 매도
+
+        Args:
+            symbol (str): 종목코드
+            exchange_code (str): 거래소 코드 (
+                NASD : 나스닥, NYSE : 뉴욕, AMEX : 아멕스,
+                SEHK : 홍콩, SHAA : 중국상해, SZAA : 중국심천,
+                TKSE : 일본, HASE : 베트남 하노이, VNSE : 베트남 호치민
+            )
+            quantity (int): 주문수량
+            price (float): 주문단가
+
+        Returns:
+            dict: 주문 결과
 
         해외주식 주문 API입니다.
 
@@ -106,7 +142,7 @@ class OrderAPI:
         url = f"{self._url}/{path}"
 
         headers = self._auth.get_header()
-        headers["tr_id"] = _get_sell_tr_id(exchange, self._auth.is_real)
+        headers["tr_id"] = _get_sell_tr_id(exchange_code, self._auth.is_real)
         body = {
             "CANO": self._auth.cano,
             "ACNT_PRDT_CD": self._auth.acnt_prdt_cd,
@@ -122,12 +158,26 @@ class OrderAPI:
         resp = self._request(method="post", url=url, headers=headers, json=body)
         return resp.json["output"]  # type: ignore[no-any-return]
 
-    def sell_market(self, symbol: str, exchange: str, quantity: int) -> dict:
-        return self.sell(symbol, exchange, quantity, 0)
+    def sell_market(self, symbol: str, exchange_code: str, quantity: int) -> dict:
+        """시장가 매도
+        Args:
+            symbol (str): 종목코드
+            exchange_code (str): 거래소 코드 (
+                NASD : 나스닥, NYSE : 뉴욕, AMEX : 아멕스,
+                SEHK : 홍콩, SHAA : 중국상해, SZAA : 중국심천,
+                TKSE : 일본, HASE : 베트남 하노이, VNSE : 베트남 호치민
+            )
+            quantity (int): 주문수량
+
+        Returns:
+            dict: 주문 결과
+        """
+        return self.sell(symbol, exchange_code, quantity, 0)
 
     def update(
         self,
         symbol: str,
+        exchange_code: str,
         order_number: str,
         quantity: str,
         price: float,
@@ -135,22 +185,31 @@ class OrderAPI:
         """
         해외주식 정정취소주문[v1_해외주식-003] - 정정
 
+        Args:
+            symbol (str): 종목코드
+            exchange_code (str): 거래소 코드 (
+                NASD : 나스닥, NYSE : 뉴욕, AMEX : 아멕스,
+                SEHK : 홍콩, SHAA : 중국상해, SZAA : 중국심천,
+                TKSE : 일본, HASE : 베트남 하노이, VNSE : 베트남 호치민
+            )
+            order_number (str): 주문번호
+            quantity (str): 주문수량
+            price (float): 주문단가
+
+        Returns:
+            dict: 주문 결과
+
         - 2개 주문하고 1개만 수정하면? 수량 불일치 에러, 수량을 맞춰야 함
         """
         path = "uapi/overseas-stock/v1/trading/order-rvsecncl"
         url = f"{self._url}/{path}"
 
-        if self._auth.is_real:
-            tr_id = "TTTT1004U"
-        else:
-            tr_id = "VTTT1004U"
-
         headers = self._auth.get_header()
-        headers["tr_id"] = tr_id
+        headers["tr_id"] = _get_cancel_tr_id(exchange_code, self._auth.is_real)
         body = {
             "CANO": self._auth.cano,
             "ACNT_PRDT_CD": self._auth.acnt_prdt_cd,
-            "OVRS_EXCG_CD": "NASD",  # 나스닥
+            "OVRS_EXCG_CD": exchange_code,
             "PDNO": symbol,
             "ORGN_ODNO": order_number,
             "RVSE_CNCL_DVSN_CD": "01",  # 정정
@@ -161,26 +220,33 @@ class OrderAPI:
         resp = self._request(method="post", url=url, headers=headers, json=body)
         return resp.json["output"]  # type: ignore[no-any-return]
 
-    def cancel(self, symbol: str, order_number: str) -> dict:
+    def cancel(self, symbol: str, exchange_code: str, order_number: str) -> dict:
         """
         해외주식 정정취소주문[v1_해외주식-003] - 취소
+
+        Args:
+            symbol (str): 종목코드
+            exchange_code (str): 거래소 코드 (
+                NASD : 나스닥, NYSE : 뉴욕, AMEX : 아멕스,
+                SEHK : 홍콩, SHAA : 중국상해, SZAA : 중국심천,
+                TKSE : 일본, HASE : 베트남 하노이, VNSE : 베트남 호치민
+            )
+            order_number (str): 주문번호
+
+        Returns:
+            dict: 주문 결과
 
         # 2개 주문하고 1개만 취소하면? 취소는 수량 관계없이 가능
         """
         path = "uapi/overseas-stock/v1/trading/order-rvsecncl"
         url = f"{self._url}/{path}"
 
-        if self._auth.is_real:
-            tr_id = "TTTT1004U"
-        else:
-            tr_id = "VTTT1004U"
-
         headers = self._auth.get_header()
-        headers["tr_id"] = tr_id
+        headers["tr_id"] = _get_cancel_tr_id(exchange_code, self._auth.is_real)
         body = {
             "CANO": self._auth.cano,
             "ACNT_PRDT_CD": self._auth.acnt_prdt_cd,
-            "OVRS_EXCG_CD": "NASD",  # 나스닥
+            "OVRS_EXCG_CD": exchange_code,
             "PDNO": symbol,
             "ORGN_ODNO": order_number,
             "RVSE_CNCL_DVSN_CD": "02",  # 취소
@@ -253,7 +319,7 @@ class OrderAPI:
             "ORD_END_DT": end_date,  # 조회종료일자
             "SLL_BUY_DVSN": "00",  # 매도매수구분: 00-전체, 01-매도, 02-매수
             "CCLD_NCCS_DVSN": "00",  # 체결미체결구분: 00-전체, 01-체결, 02-미체결
-            "OVRS_EXCG_CD": "NASD",  # 거래소코드: NASD-나스닥, NYSE-뉴욕증권거래소, ...
+            "OVRS_EXCG_CD": "%",  # 거래소코드, 전종목일 경우 % 입력
             "SORT_SQN": "DS",  # 정렬순서: DS-내림차순, AS-오름차순
             "ORD_DT": "",
             "ORD_GNO_BRNO": "",
@@ -320,6 +386,37 @@ def _get_sell_tr_id(exchange: str, is_real: bool) -> str:
         "TKSE": "VTTS0307U",
         "HASE": "VTTS0310U",
         "VNSE": "VTTS0310U",
+    }
+
+    if is_real:
+        return real_tr_id[exchange]
+    else:
+        return mock_tr_id[exchange]
+
+
+def _get_cancel_tr_id(exchange: str, is_real: bool) -> str:
+    real_tr_id = {
+        "NASD": "TTTT1004U",
+        "NYSE": "TTTT1004U",
+        "AMEX": "TTTT1004U",
+        "SEHK": "TTTS1003U",
+        "SHAA": "TTTS0302U",
+        "SZAA": "TTTS0306U",
+        "TKSE": "TTTS0309U",
+        "HASE": "TTTS0312U",
+        "VNSE": "TTTS0312U",
+    }
+
+    mock_tr_id = {
+        "NASD": "VTTT1004U",
+        "NYSE": "VTTT1004U",
+        "AMEX": "VTTT1004U",
+        "SEHK": "VTTS1003U",
+        "SHAA": "VTTS0302U",
+        "SZAA": "VTTS0306U",
+        "TKSE": "VTTS0309U",
+        "HASE": "VTTS0312U",
+        "VNSE": "VTTS0312U",
     }
 
     if is_real:
