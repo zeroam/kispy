@@ -2,7 +2,7 @@ import logging
 
 import requests
 
-from kispy.auth import AuthAPI
+from kispy.auth import KisAuth
 from kispy.constants import REAL_URL, VIRTUAL_URL
 from kispy.domestic_stock import DomesticStock
 from kispy.overseas_stock import OverseasStock
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class KisClient:
     def __init__(
         self,
-        auth: AuthAPI,
+        auth: KisAuth,
     ) -> None:
         """KIS API 클라이언트를 초기화합니다.
 

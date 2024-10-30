@@ -1,13 +1,13 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from kispy.auth import AuthAPI
+from kispy.auth import KisAuth
 from kispy.exceptions import KispyException
 
 
 @pytest.fixture
 def auth_api():
-    return AuthAPI(
+    return KisAuth(
         app_key="app_key",
         secret="app_secret",
         account_no="account_no-01",
@@ -23,7 +23,7 @@ def _patch_requests(mocker: MockerFixture, status_code: int, json: dict):
     mocker.patch("requests.request", return_value=mock_response)
 
 
-def test_auth_get_token(auth_api: AuthAPI, mocker: MockerFixture):
+def test_auth_get_token(auth_api: KisAuth, mocker: MockerFixture):
     """성공"""
     content = {
         "access_token": "token",
@@ -39,7 +39,7 @@ def test_auth_get_token(auth_api: AuthAPI, mocker: MockerFixture):
     assert token.access_token_token_expired.strftime("%Y-%m-%d %H:%M:%S") == content["access_token_token_expired"]
 
 
-def test_auth_get_token_invalid_app_key(auth_api: AuthAPI, mocker: MockerFixture):
+def test_auth_get_token_invalid_app_key(auth_api: KisAuth, mocker: MockerFixture):
     """
     잘못된 app_key를 사용했을 때 에러를 발생시킨다.
     """
@@ -55,7 +55,7 @@ def test_auth_get_token_invalid_app_key(auth_api: AuthAPI, mocker: MockerFixture
     assert "유효하지 않은 AppKey입니다." in str(e.value)
 
 
-def test_auth_get_token_invalid_app_secret(auth_api: AuthAPI, mocker: MockerFixture):
+def test_auth_get_token_invalid_app_secret(auth_api: KisAuth, mocker: MockerFixture):
     """
     잘못된 app_secret를 사용했을 때 에러를 발생시킨다.
     """
@@ -68,7 +68,7 @@ def test_auth_get_token_invalid_app_secret(auth_api: AuthAPI, mocker: MockerFixt
     assert "유효하지 않은 AppSecret입니다." in str(e.value)
 
 
-def test_auth_get_token_short_interval(auth_api: AuthAPI, mocker: MockerFixture):
+def test_auth_get_token_short_interval(auth_api: KisAuth, mocker: MockerFixture):
     """
     너무 자주 토큰을 요청했을 때 에러를 발생시킨다.
     """

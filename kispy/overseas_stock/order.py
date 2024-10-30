@@ -9,13 +9,13 @@
 
 import requests
 
-from kispy.auth import AuthAPI
+from kispy.auth import KisAuth
 from kispy.constants import REAL_URL, VIRTUAL_URL
 from kispy.responses import BaseResponse
 
 
 class OrderAPI:
-    def __init__(self, auth: AuthAPI):
+    def __init__(self, auth: KisAuth):
         self._url = REAL_URL if auth.is_real else VIRTUAL_URL
         self._auth = auth
 
@@ -25,7 +25,7 @@ class OrderAPI:
         custom_resp.raise_for_status()
         return custom_resp
 
-    def buy(self, symbol: str, quantity: int, price: float) -> dict:
+    def buy(self, symbol: str, exchange: str, quantity: int, price: float) -> dict:
         """해외주식주문[v1_해외주식-001] - 매수
 
         해외주식 주문 API입니다.
@@ -55,10 +55,7 @@ class OrderAPI:
         path = "uapi/overseas-stock/v1/trading/order"
         url = f"{self._url}/{path}"
 
-        if self._auth.is_real:
-            tr_id = "TTTT1002U"  # 실전투자
-        else:
-            tr_id = "VTTT1002U"  # 모의투자
+        tr_id = _get_buy_tr_id(exchange, self._auth.is_real)
 
         headers = self._auth.get_header()
         headers["tr_id"] = tr_id
@@ -78,7 +75,10 @@ class OrderAPI:
         # TODO: resp 타입 정의하기
         return resp.json["output"]  # type: ignore[no-any-return]
 
-    def sell(self, symbol: str, quantity: int, price: float) -> dict:
+    def buy_market(self, symbol: str, exchange: str, quantity: int) -> dict:
+        return self.buy(symbol, exchange, quantity, 0)
+
+    def sell(self, symbol: str, exchange: str, quantity: int, price: float) -> dict:
         """해외주식주문[v1_해외주식-001] - 매도
 
         해외주식 주문 API입니다.
@@ -105,13 +105,8 @@ class OrderAPI:
         path = "uapi/overseas-stock/v1/trading/order"
         url = f"{self._url}/{path}"
 
-        if self._auth.is_real:
-            tr_id = "TTTT1006U"  # 실전투자
-        else:
-            tr_id = "VTTT1006U"  # 모의투자
-
         headers = self._auth.get_header()
-        headers["tr_id"] = tr_id
+        headers["tr_id"] = _get_sell_tr_id(exchange, self._auth.is_real)
         body = {
             "CANO": self._auth.cano,
             "ACNT_PRDT_CD": self._auth.acnt_prdt_cd,
@@ -126,6 +121,9 @@ class OrderAPI:
 
         resp = self._request(method="post", url=url, headers=headers, json=body)
         return resp.json["output"]  # type: ignore[no-any-return]
+
+    def sell_market(self, symbol: str, exchange: str, quantity: int) -> dict:
+        return self.sell(symbol, exchange, quantity, 0)
 
     def update(
         self,
@@ -266,3 +264,65 @@ class OrderAPI:
 
         resp = self._request(method="get", url=url, headers=headers, params=params)
         return resp.json
+
+
+def _get_buy_tr_id(exchange: str, is_real: bool) -> str:
+    real_tr_id = {
+        "NASD": "TTTT1002U",
+        "NYSE": "TTTT1002U",
+        "AMEX": "TTTT1002U",
+        "SEHK": "TTTS1002U",
+        "SHAA": "TTTS0202U",
+        "SZAA": "TTTS0305U",
+        "TKSE": "TTTS0308U",
+        "HASE": "TTTS0311U",
+        "VNSE": "TTTS0311U",
+    }
+
+    mock_tr_id = {
+        "NASD": "VTTT1002U",
+        "NYSE": "VTTT1002U",
+        "AMEX": "VTTT1002U",
+        "SEHK": "VTTS1002U",
+        "SHAA": "VTTS0202U",
+        "SZAA": "VTTS0305U",
+        "TKSE": "VTTS0308U",
+        "HASE": "VTTS0311U",
+        "VNSE": "VTTS0311U",
+    }
+
+    if is_real:
+        return real_tr_id[exchange]
+    else:
+        return mock_tr_id[exchange]
+
+
+def _get_sell_tr_id(exchange: str, is_real: bool) -> str:
+    real_tr_id = {
+        "NASD": "TTTT1006U",
+        "NYSE": "TTTT1006U",
+        "AMEX": "TTTT1006U",
+        "SEHK": "TTTS1001U",
+        "SHAA": "TTTS1005U",
+        "SZAA": "TTTS0304U",
+        "TKSE": "TTTS0307U",
+        "HASE": "TTTS0310U",
+        "VNSE": "TTTS0310U",
+    }
+
+    mock_tr_id = {
+        "NASD": "VTTT1006U",
+        "NYSE": "VTTT1006U",
+        "AMEX": "VTTT1006U",
+        "SEHK": "VTTS1001U",
+        "SHAA": "VTTS1005U",
+        "SZAA": "VTTS0304U",
+        "TKSE": "VTTS0307U",
+        "HASE": "VTTS0310U",
+        "VNSE": "VTTS0310U",
+    }
+
+    if is_real:
+        return real_tr_id[exchange]
+    else:
+        return mock_tr_id[exchange]

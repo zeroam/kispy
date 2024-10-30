@@ -23,7 +23,7 @@ class Token(BaseModel):
         return datetime.now() > self.access_token_token_expired
 
 
-class AuthAPI:
+class KisAuth:
     def __init__(
         self,
         app_key: str,

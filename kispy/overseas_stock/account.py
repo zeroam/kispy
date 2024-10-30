@@ -14,13 +14,13 @@
 
 import requests
 
-from kispy.auth import AuthAPI
+from kispy.auth import KisAuth
 from kispy.constants import REAL_URL, VIRTUAL_URL
 from kispy.responses import BaseResponse
 
 
 class AccountAPI:
-    def __init__(self, auth: AuthAPI):
+    def __init__(self, auth: KisAuth):
         self._url = REAL_URL if auth.is_real else VIRTUAL_URL
         self._auth = auth
 
