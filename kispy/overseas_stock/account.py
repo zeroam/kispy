@@ -12,24 +12,10 @@
 - 해외증거금 통화별조회
 """
 
-import requests
-
-from kispy.auth import KisAuth
-from kispy.constants import REAL_URL, VIRTUAL_URL
-from kispy.responses import BaseResponse
+from kispy.base import BaseAPI
 
 
-class AccountAPI:
-    def __init__(self, auth: KisAuth):
-        self._url = REAL_URL if auth.is_real else VIRTUAL_URL
-        self._auth = auth
-
-    def _request(self, method: str, url: str, **kwargs) -> BaseResponse:
-        resp = requests.request(method, url, **kwargs)
-        custom_resp = BaseResponse(status_code=resp.status_code, json=resp.json())
-        custom_resp.raise_for_status()
-        return custom_resp
-
+class AccountAPI(BaseAPI):
     def inquire_balance(self) -> dict:
         """해외주식 잔고[v1_해외주식-006]
 

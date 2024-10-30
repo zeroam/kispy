@@ -4,33 +4,19 @@
 
 from datetime import datetime, timedelta
 
-import requests
-
-from kispy.auth import KisAuth
-from kispy.constants import REAL_URL, VIRTUAL_URL
-from kispy.responses import BaseResponse
+from kispy.base import BaseAPI
 
 
-class QuoteAPI:
-    def __init__(self, auth: KisAuth):
-        self._url = REAL_URL if auth.is_real else VIRTUAL_URL
-        self._auth = auth
-
-    def _request(self, method: str, url: str, **kwargs) -> BaseResponse:
-        resp = requests.request(method, url, **kwargs)
-        custom_resp = BaseResponse(status_code=resp.status_code, json=resp.json())
-        custom_resp.raise_for_status()
-        return custom_resp
-
-    def get_price(self, stock_code: str) -> int:
+class QuoteAPI(BaseAPI):
+    def get_price(self, symbol: str) -> float:
         """
         주식 현재가 시세 API입니다. 실시간 시세를 원하신다면 웹소켓 API를 활용하세요.
 
         Args:
-            stock_code (str): 종목코드
+            symbol (str): 종목코드
 
         Returns:
-            int: 주식 현재가
+            float: 주식 현재가
         """
         path = "uapi/domestic-stock/v1/quotations/inquire-price"
         url = f"{self._url}/{path}"
@@ -40,11 +26,11 @@ class QuoteAPI:
         headers["tr_id"] = tr_id
         params = {
             "fid_cond_mrkt_div_code": "J",
-            "fid_input_iscd": stock_code,
+            "fid_input_iscd": symbol,
         }
 
         resp = self._request(method="get", url=url, headers=headers, params=params)
-        return int(resp.json["output"]["stck_prpr"])
+        return float(resp.json["output"]["stck_prpr"])
 
     def get_stock_price_history(
         self,

@@ -2,24 +2,10 @@
 - 주문 관련 기능 (매수, 매도, 정정, 취소 등)
 """
 
-import requests
-
-from kispy.auth import KisAuth
-from kispy.constants import REAL_URL, VIRTUAL_URL
-from kispy.responses import BaseResponse
+from kispy.base import BaseAPI
 
 
-class OrderAPI:
-    def __init__(self, auth: KisAuth):
-        self._url = REAL_URL if auth.is_real else VIRTUAL_URL
-        self._auth = auth
-
-    def _request(self, method: str, url: str, **kwargs) -> BaseResponse:
-        resp = requests.request(method, url, **kwargs)
-        custom_resp = BaseResponse(status_code=resp.status_code, json=resp.json())
-        custom_resp.raise_for_status()
-        return custom_resp
-
+class OrderAPI(BaseAPI):
     def buy(self, stock_code: str, quantity: int, price: float) -> dict:
         """
         주식주문(현금)[v1_국내주식-001] - 매수

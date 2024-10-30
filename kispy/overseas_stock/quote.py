@@ -4,24 +4,10 @@
 
 from datetime import datetime, timedelta
 
-import requests
-
-from kispy.auth import KisAuth
-from kispy.constants import REAL_URL, VIRTUAL_URL
-from kispy.responses import BaseResponse
+from kispy.base import BaseAPI
 
 
-class QuoteAPI:
-    def __init__(self, auth: KisAuth):
-        self._url = REAL_URL if auth.is_real else VIRTUAL_URL
-        self._auth = auth
-
-    def _request(self, method: str, url: str, **kwargs) -> BaseResponse:
-        resp = requests.request(method, url, **kwargs)
-        custom_resp = BaseResponse(status_code=resp.status_code, json=resp.json())
-        custom_resp.raise_for_status()
-        return custom_resp
-
+class QuoteAPI(BaseAPI):
     def get_price(self, symbol: str) -> float:
         """해외주식 현재체결가[v1_해외주식-009]
 

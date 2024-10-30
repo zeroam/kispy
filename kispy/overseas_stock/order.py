@@ -7,24 +7,10 @@
 - 해외주식 주문체결내역
 """
 
-import requests
-
-from kispy.auth import KisAuth
-from kispy.constants import REAL_URL, VIRTUAL_URL
-from kispy.responses import BaseResponse
+from kispy.base import BaseAPI
 
 
-class OrderAPI:
-    def __init__(self, auth: KisAuth):
-        self._url = REAL_URL if auth.is_real else VIRTUAL_URL
-        self._auth = auth
-
-    def _request(self, method: str, url: str, **kwargs) -> BaseResponse:
-        resp = requests.request(method, url, **kwargs)
-        custom_resp = BaseResponse(status_code=resp.status_code, json=resp.json())
-        custom_resp.raise_for_status()
-        return custom_resp
-
+class OrderAPI(BaseAPI):
     def buy(self, symbol: str, exchange_code: str, quantity: int, price: float) -> dict:
         """해외주식주문[v1_해외주식-001] - 매수
 
@@ -263,6 +249,7 @@ class OrderAPI:
 
         - 한번 호출에 40개 그 이후 조회는 FK, NK를 활용한 구현 필요
         """
+        # TODO: 다른 거래소도 조회 가능하도록 지원
         path = "uapi/overseas-stock/v1/trading/inquire-nccs"
         url = f"{self._url}/{path}"
 
@@ -276,7 +263,7 @@ class OrderAPI:
         params = {
             "CANO": self._auth.cano,
             "ACNT_PRDT_CD": self._auth.acnt_prdt_cd,
-            "OVRS_EXCG_CD": "NASD",  # 나스닥
+            "OVRS_EXCG_CD": "NASD",  # 나스닥(미국전체)
             "SORT_SQN": "DS",  # 정렬순서: DS-내림차순, AS-오름차순
             "CTX_AREA_FK200": "",
             "CTX_AREA_NK200": "",
