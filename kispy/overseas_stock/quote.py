@@ -8,8 +8,20 @@ from kispy.base import BaseAPI
 
 
 class QuoteAPI(BaseAPI):
-    def get_price(self, symbol: str) -> float:
+    def get_price(self, symbol: str, exchange_code: str) -> float:
         """해외주식 현재체결가[v1_해외주식-009]
+
+        Args:
+            symbol (str): 종목코드
+            exchange_code (str): 거래소 코드 (
+                HKS : 홍콩, NYS : 뉴욕, NAS : 나스닥, AMS : 아멕스,
+                TSE : 도쿄, SHS : 상해, SZS : 심천, SHI : 상해지수,
+                SZI : 심천지수, HSX : 호치민, HNX : 하노이,
+                BAY : 뉴욕(주간), BAQ : 나스닥(주간), BAA : 아멕스(주간)
+            )
+
+        Returns:
+            float: 현재체결가
 
         해외주식 시세는 무료시세(지연체결가)만이 제공되며, API로는 유료시세(실시간체결가)를 받아보실 수 없습니다.
 
@@ -42,10 +54,9 @@ class QuoteAPI(BaseAPI):
 
         headers = self._auth.get_header()
         headers["tr_id"] = "HHDFS00000300"
-        # TODO: symbol 기준으로 거래소 코드를 가져오는 함수 추가하기
         params = {
             "AUTH": "",
-            "EXCD": "NAS",  # 나스닥
+            "EXCD": exchange_code,
             "SYMB": symbol,
         }
 
