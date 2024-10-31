@@ -67,7 +67,7 @@ class QuoteAPI(BaseAPI):
     def get_stock_price_history(
         self,
         symbol: str,
-        exchange: str,
+        exchange_code: str,
         start_date: str,
         end_date: str | None = None,
         period: str = "D",
@@ -79,7 +79,7 @@ class QuoteAPI(BaseAPI):
 
         Args:
             symbol (str): 종목코드
-            exchange (str): 거래소코드 (
+            exchange_code (str): 거래소코드 (
                 HKS : 홍콩, NYS : 뉴욕, NAS : 나스닥, AMS : 아멕스, TSE : 도쿄,
                 SHS : 상해, SZS : 심천, SHI : 상해지수, SZI : 심천지수, HSX : 호치민, HNX : 하노이,
                 BAY : 뉴욕(주간), BAQ : 나스닥(주간), BAA : 아멕스(주간)
@@ -118,7 +118,7 @@ class QuoteAPI(BaseAPI):
                 headers=headers,
                 params={
                     "AUTH": "",
-                    "EXCD": exchange,
+                    "EXCD": exchange_code,
                     "SYMB": symbol,
                     "GUBN": period_map[period],
                     "BYMD": cur_end_date.strftime("%Y%m%d"),
@@ -141,6 +141,69 @@ class QuoteAPI(BaseAPI):
         if not desc:
             result.reverse()
         return result
+
+    def get_stock_price_history_by_minute(
+        self,
+        symbol: str,
+        exchange_code: str,
+        period: str = "1",
+        limit: int | None = 120,
+    ) -> list[dict]:
+        """해외주식분봉조회[v1_해외주식-030]
+        해외주식분봉조회 API입니다. 실전계좌의 경우, 한 번의 호출에 최근 120건까지 확인 가능합니다.
+        NEXT 및 KEYB 값을 사용하여 데이터를 계속해서 다음 조회할 수 있으며, 최대 다음조회 가능 기간은 약 1개월입니다.
+
+        Args:
+            symbol (str): 종목코드
+            exchange_code (str): 거래소코드
+            period (str): 조회기간, 기본값은 "1" (1분)
+            limit (int | None): 조회건수, 기본값은 120, None일 경우 최대 조회 가능 건수까지 조회
+        Returns:
+            list[dict]: 주식 분봉 시세
+        """
+        path = "uapi/overseas-price/v1/quotations/inquire-time-itemchartprice"
+        url = f"{self._url}/{path}"
+
+        headers = self._auth.get_header()
+        headers["tr_id"] = "HHDFS76950200"
+
+        result: list[dict] = []
+        next_value = ""
+        keyb = ""
+        while limit is None or len(result) < limit:
+            size = min(limit - len(result), 120) if limit else 120
+            params = {
+                "AUTH": "",
+                "EXCD": exchange_code,
+                "SYMB": symbol,
+                "NMIN": period,
+                "PINC": "1",
+                "NEXT": next_value,
+                "NREC": str(size),
+                "FILL": "",
+                "KEYB": keyb,
+            }
+
+            resp = self._request(method="get", url=url, headers=headers, params=params)
+            records = resp.json["output2"]
+            if not records:
+                break
+
+            result.extend(records)
+
+            keyb = self._get_next_keyb(records, period)
+            next_value = resp.json["output1"]["next"]
+            if next_value == "0":
+                break
+
+        return result
+
+    def _get_next_keyb(self, items: list[dict], period: str) -> str:
+        last_record = items[-1]
+        last_time_str = last_record["xymd"] + last_record["xhms"]
+        last_time = datetime.strptime(last_time_str, "%Y%m%d%H%M%S")
+        next_time = last_time - timedelta(minutes=int(period))
+        return next_time.strftime("%Y%m%d%H%M%S")
 
     def _parse_date(self, date_str: str) -> datetime:
         return datetime.strptime(date_str, "%Y-%m-%d")
