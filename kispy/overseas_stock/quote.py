@@ -70,7 +70,7 @@ class QuoteAPI(BaseAPI):
         exchange_code: str,
         start_date: str,
         end_date: str | None = None,
-        period: str = "D",
+        period: str = "d",
         is_adjust: bool = True,
         desc: bool = False,
     ) -> list[dict]:
@@ -86,14 +86,14 @@ class QuoteAPI(BaseAPI):
             )
             start_date (str): 조회시작일자 ("YYYY-MM-DD" 형식)
             end_date (str): 조회종료일자 ("YYYY-MM-DD" 형식)
-            period (str): 조회기간, 기본값은 "D" (일) (옵션: "D" (일), "W" (주), "M" (월))
+            period (str): 조회기간, 기본값은 "d" (일) (옵션: "d" (일), "w" (주), "M" (월))
             is_adjust (bool): 수정주가 여부, 기본값은 True
             desc (bool): 시간 역순 정렬 여부, 기본값은 False
 
         Returns:
             list[dict]: 주식 기간별 시세
         """
-        period_map = {"D": "0", "W": "1", "M": "2"}
+        period_map = {"d": "0", "w": "1", "M": "2"}
         if period not in period_map:
             raise ValueError(f"Invalid period: {period}")
 

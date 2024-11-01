@@ -1,12 +1,12 @@
 import logging
-
-import requests
+from datetime import datetime
+from typing import Literal
 
 from kispy.auth import KisAuth
-from kispy.constants import REAL_URL, VIRTUAL_URL
+from kispy.constants import OHLCV, REAL_URL, VIRTUAL_URL, ExchangeLongCodeMap, Nation, Period, Symbol
 from kispy.domestic_stock import DomesticStock
 from kispy.overseas_stock import OverseasStock
-from kispy.responses import BaseResponse
+from kispy.utils import get_symbol_map
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,140 @@ class KisClient:
         self.domestic_stock = DomesticStock(auth=self._auth)
         self.overseas_stock = OverseasStock(auth=self._auth)
 
-    def _request(self, method: str, url: str, **kwargs) -> BaseResponse:
-        resp = requests.request(method, url, **kwargs)
-        custom_resp = BaseResponse(status_code=resp.status_code, json=resp.json())
-        custom_resp.raise_for_status()
-        return custom_resp
+
+class KisClientV2:
+    def __init__(self, auth: KisAuth, nation: Nation):
+        self.client = KisClient(auth)
+        self.nation = nation
+        self._market: dict[str, Symbol] = {}
+
+    def load_market_data(self, reload: bool = False) -> None:
+        if not self._market or reload:
+            self._market = get_symbol_map(self.nation)
+
+    def get_price(self, symbol: str) -> float:
+        if self.nation == "KR":
+            # TODO: 국내주식 현재가 조회
+            raise NotImplementedError("국내주식 현재가 조회는 아직 구현되지 않았습니다.")
+
+        self.load_market_data()
+        market_symbol = self._market[symbol]
+        return self.client.overseas_stock.quote.get_price(market_symbol.symbol, market_symbol.exchange_code)
+
+    def fetch_ohlcv(
+        self,
+        symbol: str,
+        start_date: str,
+        end_date: str,
+        period: Period = "d",
+        is_adjust: bool = True,
+        desc: bool = False,
+    ) -> list[OHLCV]:
+        """
+        주식 기간별 시세 조회
+
+        Args:
+            symbol (str): 종목코드
+            start_date (str): 조회시작일자 ("YYYY-MM-DD" 형식)
+            end_date (str): 조회종료일자 ("YYYY-MM-DD" 형식)
+            period (Period): 조회기간, 기본값은 "1d"
+            is_adjust (bool): 수정주가 여부, 기본값은 True
+            desc (bool): 시간 역순 정렬 여부, 기본값은 False
+
+        Returns:
+            list[dict]: 주식 기간별 시세
+        """
+        if self.nation == "KR":
+            # TODO: 국내주식 시세 조회
+            return []
+
+        self.load_market_data()
+        market_symbol = self._market[symbol]
+
+        # TODO: 분단위 시세 조회 구현
+        exchange_code = market_symbol.exchange_code
+        histories = self.client.overseas_stock.quote.get_stock_price_history(
+            symbol=market_symbol.symbol,
+            exchange_code=exchange_code,
+            start_date=start_date,
+            end_date=end_date,
+            period=period,
+            is_adjust=is_adjust,
+            desc=desc,
+        )
+
+        return [
+            OHLCV(
+                date=datetime.strptime(history["xymd"], "%Y%m%d"),
+                open=history["open"],
+                high=history["high"],
+                low=history["low"],
+                close=history["clos"],
+                volume=history["tvol"],
+            )
+            for history in histories
+        ]
+
+    def create_order(
+        self,
+        symbol: str,
+        side: Literal["buy", "sell"],
+        price: float,
+        quantity: int,
+    ) -> str:
+        """주문 생성
+
+        Args:
+            symbol (str): 종목코드
+            side (Literal["buy", "sell"]): 주문 방향
+            price (float): 주문 가격
+            quantity (int): 주문 수량
+
+        Returns:
+            str: 주문 ID
+        """
+        if self.nation == "KR":
+            # TODO: 국내주식 주문
+            raise NotImplementedError("국내주식 주문은 아직 구현되지 않았습니다.")
+
+        self.load_market_data()
+        market_symbol = self._market[symbol]
+        exchange_code = ExchangeLongCodeMap[market_symbol.exchange_code]
+
+        if side == "buy":
+            order = self.client.overseas_stock.order.buy(
+                symbol=market_symbol.symbol,
+                exchange_code=exchange_code,
+                quantity=quantity,
+                price=price,
+            )
+        elif side == "sell":
+            order = self.client.overseas_stock.order.sell(
+                symbol=market_symbol.symbol,
+                exchange_code=exchange_code,
+                quantity=quantity,
+                price=price,
+            )
+
+        return order["ODNO"]  # type: ignore[no-any-return]
+
+    def cancel_order(self, symbol: str, order_id: str) -> str:
+        """주문취소
+
+        Args:
+            symbol (str): 종목코드
+            order_id (str): 주문번호
+
+        Returns:
+            str: 주문번호
+        """
+        self.load_market_data()
+        market_symbol = self._market[symbol]
+        exchange_code = ExchangeLongCodeMap[market_symbol.exchange_code]
+        resp = self.client.overseas_stock.order.cancel(
+            symbol=market_symbol.symbol,
+            exchange_code=exchange_code,
+            order_number=order_id,
+        )
+
+        return resp["ODNO"]  # type: ignore[no-any-return]

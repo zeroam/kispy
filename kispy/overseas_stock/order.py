@@ -71,22 +71,6 @@ class OrderAPI(BaseAPI):
         # TODO: resp 타입 정의하기
         return resp.json["output"]  # type: ignore[no-any-return]
 
-    def buy_market(self, symbol: str, exchange_code: str, quantity: int) -> dict:
-        """시장가 매수
-        Args:
-            symbol (str): 종목코드
-            exchange_code (str): 거래소 코드 (
-                NASD : 나스닥, NYSE : 뉴욕, AMEX : 아멕스,
-                SEHK : 홍콩, SHAA : 중국상해, SZAA : 중국심천,
-                TKSE : 일본, HASE : 베트남 하노이, VNSE : 베트남 호치민
-            )
-            quantity (int): 주문수량
-
-        Returns:
-            dict: 주문 결과
-        """
-        return self.buy(symbol, exchange_code, quantity, 0)
-
     def sell(self, symbol: str, exchange_code: str, quantity: int, price: float) -> dict:
         """해외주식주문[v1_해외주식-001] - 매도
 
@@ -143,22 +127,6 @@ class OrderAPI(BaseAPI):
 
         resp = self._request(method="post", url=url, headers=headers, json=body)
         return resp.json["output"]  # type: ignore[no-any-return]
-
-    def sell_market(self, symbol: str, exchange_code: str, quantity: int) -> dict:
-        """시장가 매도
-        Args:
-            symbol (str): 종목코드
-            exchange_code (str): 거래소 코드 (
-                NASD : 나스닥, NYSE : 뉴욕, AMEX : 아멕스,
-                SEHK : 홍콩, SHAA : 중국상해, SZAA : 중국심천,
-                TKSE : 일본, HASE : 베트남 하노이, VNSE : 베트남 호치민
-            )
-            quantity (int): 주문수량
-
-        Returns:
-            dict: 주문 결과
-        """
-        return self.sell(symbol, exchange_code, quantity, 0)
 
     def update(
         self,
