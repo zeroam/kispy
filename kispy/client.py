@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Literal
 
 from kispy.auth import KisAuth
-from kispy.constants import OHLCV, REAL_URL, VIRTUAL_URL, ExchangeLongCodeMap, Nation, Period, Symbol
+from kispy.constants import OHLCV, PERIOD_TO_MINUTES, REAL_URL, VIRTUAL_URL, ExchangeLongCodeMap, Nation, Period, Symbol
 from kispy.domestic_stock import DomesticStock
 from kispy.overseas_stock import OverseasStock
 from kispy.utils import get_symbol_map
@@ -62,7 +62,7 @@ class KisClientV2:
         self,
         symbol: str,
         start_date: str,
-        end_date: str,
+        end_date: str | None = None,
         period: Period = "d",
         is_adjust: bool = True,
         desc: bool = False,
@@ -88,29 +88,57 @@ class KisClientV2:
         self.load_market_data()
         market_symbol = self._market[symbol]
 
-        # TODO: 분단위 시세 조회 구현
         exchange_code = market_symbol.exchange_code
-        histories = self.client.overseas_stock.quote.get_stock_price_history(
-            symbol=market_symbol.symbol,
-            exchange_code=exchange_code,
-            start_date=start_date,
-            end_date=end_date,
-            period=period,
-            is_adjust=is_adjust,
-            desc=desc,
-        )
-
-        return [
-            OHLCV(
-                date=datetime.strptime(history["xymd"], "%Y%m%d"),
-                open=history["open"],
-                high=history["high"],
-                low=history["low"],
-                close=history["clos"],
-                volume=history["tvol"],
+        if period in ["d", "w", "M"]:
+            histories = self.client.overseas_stock.quote.get_stock_price_history(
+                symbol=market_symbol.symbol,
+                exchange_code=exchange_code,
+                start_date=start_date,
+                end_date=end_date,
+                period=period,
+                is_adjust=is_adjust,
+                desc=desc,
             )
-            for history in histories
-        ]
+            result = [
+                OHLCV(
+                    date=datetime.strptime(history["xymd"], "%Y%m%d"),
+                    open=history["open"],
+                    high=history["high"],
+                    low=history["low"],
+                    close=history["clos"],
+                    volume=history["tvol"],
+                )
+                for history in histories
+            ]
+        else:
+            # start_date가 한달 이상 초과할경우 에러
+            now = datetime.now()
+            if (now - datetime.strptime(start_date, "%Y-%m-%d")).days > 30:
+                raise ValueError("start_date can't be exceeded 1 month")
+
+            minutes = PERIOD_TO_MINUTES[period]
+            histories = self.client.overseas_stock.quote.get_stock_price_history_by_minute(
+                symbol=market_symbol.symbol,
+                exchange_code=exchange_code,
+                period=minutes,
+                start_date=start_date,
+                end_date=end_date,
+                desc=desc,
+                limit=None,
+            )
+            result = [
+                OHLCV(
+                    date=datetime.strptime(history["xymd"] + history["xhms"], "%Y%m%d%H%M%S"),
+                    open=history["open"],
+                    high=history["high"],
+                    low=history["low"],
+                    close=history["last"],
+                    volume=history["evol"],
+                )
+                for history in histories
+            ]
+
+        return result
 
     def create_order(
         self,

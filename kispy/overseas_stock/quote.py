@@ -147,7 +147,10 @@ class QuoteAPI(BaseAPI):
         symbol: str,
         exchange_code: str,
         period: str = "1",
+        start_date: str | None = None,
+        end_date: str | None = None,
         limit: int | None = 120,
+        desc: bool = False,
     ) -> list[dict]:
         """해외주식분봉조회[v1_해외주식-030]
         해외주식분봉조회 API입니다. 실전계좌의 경우, 한 번의 호출에 최근 120건까지 확인 가능합니다.
@@ -157,7 +160,10 @@ class QuoteAPI(BaseAPI):
             symbol (str): 종목코드
             exchange_code (str): 거래소코드
             period (str): 조회기간, 기본값은 "1" (1분)
+            start_date (str | None): 조회시작일자 ("YYYY-MM-DD" 형식)
+            end_date (str | None): 조회종료일자 ("YYYY-MM-DD" 형식)
             limit (int | None): 조회건수, 기본값은 120, None일 경우 최대 조회 가능 건수까지 조회
+
         Returns:
             list[dict]: 주식 분봉 시세
         """
@@ -167,9 +173,12 @@ class QuoteAPI(BaseAPI):
         headers = self._auth.get_header()
         headers["tr_id"] = "HHDFS76950200"
 
+        parsed_start_date = self._parse_date(start_date) if start_date else None
+        parsed_end_date = self._parse_date(end_date) if end_date else datetime.now()
+
         result: list[dict] = []
-        next_value = ""
-        keyb = ""
+        next_value = "1"
+        keyb = parsed_end_date.strftime("%Y%m%d%H%M%S")
         while limit is None or len(result) < limit:
             size = min(limit - len(result), 120) if limit else 120
             params = {
@@ -189,13 +198,25 @@ class QuoteAPI(BaseAPI):
             if not records:
                 break
 
-            result.extend(records)
+            filtered_records = []
+            for record in records:
+                record_date = datetime.strptime(record["xymd"] + record["xhms"], "%Y%m%d%H%M%S")
+                if parsed_start_date and record_date < parsed_start_date:
+                    continue
+                filtered_records.append(record)
+
+            if not filtered_records:
+                break
+
+            result.extend(filtered_records)
 
             keyb = self._get_next_keyb(records, period)
             next_value = resp.json["output1"]["next"]
             if next_value == "0":
                 break
 
+        if not desc:
+            result.reverse()
         return result
 
     def _get_next_keyb(self, items: list[dict], period: str) -> str:

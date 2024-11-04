@@ -49,6 +49,18 @@ Period = Literal[
     "M",
 ]
 
+PERIOD_TO_MINUTES: dict[Period, str] = {
+    "1m": "1",
+    "3m": "3",
+    "5m": "5",
+    "10m": "10",
+    "15m": "15",
+    "30m": "30",
+    "1h": "60",
+    "2h": "120",
+    "4h": "240",
+}
+
 
 @dataclass
 class Symbol:

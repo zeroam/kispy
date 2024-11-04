@@ -60,3 +60,52 @@ def test_get_stock_price_history_with_asc(auth: KisAuth):
 
     assert len(resp) == 10
     assert resp[0]["xymd"] == "20070831"
+
+
+def test_get_stock_price_history_by_minute(auth: KisAuth):
+    quote = KisClient(auth).overseas_stock.quote
+    # 주말을 제외한 최근 하루의 분봉 시세 조회
+    yesterday = datetime.now() - timedelta(days=1)
+    while yesterday.weekday() >= 5:
+        yesterday -= timedelta(days=1)
+
+    resp = quote.get_stock_price_history_by_minute(
+        symbol="AAPL",
+        exchange_code="NAS",
+        start_date=(yesterday - timedelta(days=1)).strftime("%Y-%m-%d"),
+        end_date=yesterday.strftime("%Y-%m-%d"),
+        period="1m",
+        limit=None,
+    )
+
+    assert len(resp) == 391
+
+
+def test_get_stock_price_history_by_minute_with_limit(auth: KisAuth):
+    quote = KisClient(auth).overseas_stock.quote
+    yesterday = datetime.now() - timedelta(days=1)
+    while yesterday.weekday() >= 5:
+        yesterday -= timedelta(days=1)
+
+    resp = quote.get_stock_price_history_by_minute(
+        symbol="AAPL",
+        exchange_code="NAS",
+        start_date=(yesterday - timedelta(days=1)).strftime("%Y-%m-%d"),
+        end_date=yesterday.strftime("%Y-%m-%d"),
+        limit=10,
+    )
+
+    assert len(resp) == 10
+
+
+def test_get_stock_price_history_by_minute_not_exists(auth: KisAuth):
+    quote = KisClient(auth).overseas_stock.quote
+    resp = quote.get_stock_price_history_by_minute(
+        symbol="AAPL",
+        exchange_code="NAS",
+        start_date="2024-11-01",
+        end_date="2024-11-02",
+        limit=10,
+    )
+
+    assert resp == []
