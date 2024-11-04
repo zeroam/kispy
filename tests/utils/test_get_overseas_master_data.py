@@ -1,16 +1,8 @@
-import csv
-import io
-import zipfile
-
-import requests
-
-from kispy.constants import ExchangeCode, Nation, NationExchangeCodeMap, Symbol
+from kispy.utils import get_overseas_master_data
 
 
-def get_overseas_master_data(exchange_code: ExchangeCode) -> list[dict]:
-    url = f"https://new.real.download.dws.co.kr/common/master/{exchange_code.lower()}mst.cod.zip"
-    resp = requests.get(url)
-
+def test_get_overseas_master_data():
+    data = get_overseas_master_data("NAS")
     columns = [
         "national_code",  # 국가코드
         "exchange_id",  # 거래소 코드
@@ -38,25 +30,6 @@ def get_overseas_master_data(exchange_code: ExchangeCode) -> list[dict]:
         "tick_size_type_detail",  # Tick size type 상세
     ]
 
-    with zipfile.ZipFile(io.BytesIO(resp.content)) as zip_file:
-        with zip_file.open(f"{exchange_code}mst.cod".upper()) as file:
-            text = io.TextIOWrapper(file, encoding="cp949")
-            reader = csv.DictReader(text, fieldnames=columns, delimiter="\t")
-            return list(reader)
-
-
-def get_symbol_map(nation: Nation) -> dict[str, Symbol]:
-    symbol_map: dict[str, Symbol] = {}
-    for exchange_code in NationExchangeCodeMap[nation]:
-        master_data = get_overseas_master_data(exchange_code)
-        symbol_map.update(
-            {
-                data["symbol"]: Symbol(
-                    symbol=data["symbol"],
-                    exchange_code=data["exchange_code"],
-                    realtime_symbol=data["realtime_symbol"],
-                )
-                for data in master_data
-            }
-        )
-    return symbol_map
+    assert len(data) > 0
+    for column in columns:
+        assert column in data[0]
