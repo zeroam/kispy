@@ -4,6 +4,7 @@ import pickle
 import tempfile
 from datetime import datetime
 
+import pytz
 import requests
 from pydantic import BaseModel, Field
 
@@ -20,7 +21,8 @@ class Token(BaseModel):
     access_token_token_expired: datetime = Field(description="액세스 토큰 만료일시")
 
     def is_expired(self) -> bool:
-        return datetime.now() > self.access_token_token_expired
+        kst = pytz.timezone("Asia/Seoul")
+        return datetime.now(kst) > self.access_token_token_expired
 
 
 class KisAuth:
@@ -56,10 +58,11 @@ class KisAuth:
                 "appsecret": self.app_secret,
             },
         )
+        kst = pytz.timezone("Asia/Seoul")
         access_token_token_expired = datetime.strptime(
             resp.json["access_token_token_expired"],
             "%Y-%m-%d %H:%M:%S",
-        )
+        ).replace(tzinfo=kst)
         return Token(
             token_type=resp.json["token_type"],
             access_token=resp.json["access_token"],
