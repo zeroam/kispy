@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 REAL_URL = "https://openapi.koreainvestment.com:9443"  # 실전투자 API
 VIRTUAL_URL = "https://openapivts.koreainvestment.com:29443"  # 모의투자 API
@@ -72,8 +72,11 @@ class Symbol:
 @dataclass
 class OHLCV:
     date: datetime
-    open: float
-    high: float
-    low: float
-    close: float
-    volume: int
+    open: str
+    high: str
+    low: str
+    close: str
+    volume: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
