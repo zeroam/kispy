@@ -4,11 +4,14 @@
 
 from datetime import datetime, timedelta
 
+from zoneinfo import ZoneInfo
+
 from kispy.base import BaseAPI
+from kispy.constants import ExchangeCode, TimeZoneMap
 
 
 class QuoteAPI(BaseAPI):
-    def get_price(self, symbol: str, exchange_code: str) -> float:
+    def get_price(self, symbol: str, exchange_code: ExchangeCode) -> float:
         """해외주식 현재체결가[v1_해외주식-009]
 
         Args:
@@ -67,7 +70,7 @@ class QuoteAPI(BaseAPI):
     def get_stock_price_history(
         self,
         symbol: str,
-        exchange_code: str,
+        exchange_code: ExchangeCode,
         start_date: str,
         end_date: str | None = None,
         period: str = "d",
@@ -103,10 +106,11 @@ class QuoteAPI(BaseAPI):
         headers = self._auth.get_header()
         headers["tr_id"] = "HHDFS76240000"
 
-        parsed_start_date = self._parse_date(start_date)
+        zone_info = TimeZoneMap[exchange_code]
+        parsed_start_date = self._parse_date(start_date, zone_info)
         parsed_end_date = min(
-            self._parse_date(end_date or datetime.now().strftime("%Y-%m-%d")),
-            datetime.now(),
+            self._parse_date(end_date or datetime.now().strftime("%Y-%m-%d"), zone_info),
+            datetime.now(tz=zone_info),
         )
 
         result: list[dict] = []
@@ -145,7 +149,7 @@ class QuoteAPI(BaseAPI):
     def get_stock_price_history_by_minute(
         self,
         symbol: str,
-        exchange_code: str,
+        exchange_code: ExchangeCode,
         period: str = "1",
         start_date: str | None = None,
         end_date: str | None = None,
@@ -173,12 +177,18 @@ class QuoteAPI(BaseAPI):
         headers = self._auth.get_header()
         headers["tr_id"] = "HHDFS76950200"
 
-        parsed_start_date = self._parse_date(start_date) if start_date else None
-        parsed_end_date = self._parse_date(end_date) if end_date else datetime.now()
+        zone_info = TimeZoneMap[exchange_code]
+        now = datetime.now(tz=zone_info)
+        parsed_start_date = self._parse_date(start_date, zone_info) if start_date else None
+        parsed_end_date = self._parse_date(end_date, zone_info) if end_date else now
 
         result: list[dict] = []
-        next_value = "1"
-        keyb = parsed_end_date.strftime("%Y%m%d%H%M%S")
+        if parsed_end_date >= now:
+            next_value = ""
+            keyb = ""
+        else:
+            next_value = "1"
+            keyb = parsed_end_date.strftime("%Y%m%d%H%M%S")
         while limit is None or len(result) < limit:
             size = min(limit - len(result), 120) if limit else 120
             params = {
@@ -200,7 +210,7 @@ class QuoteAPI(BaseAPI):
 
             filtered_records = []
             for record in records:
-                record_date = datetime.strptime(record["xymd"] + record["xhms"], "%Y%m%d%H%M%S")
+                record_date = datetime.strptime(record["xymd"] + record["xhms"], "%Y%m%d%H%M%S").replace(tzinfo=zone_info)
                 if parsed_start_date and record_date < parsed_start_date:
                     continue
                 filtered_records.append(record)
@@ -226,5 +236,8 @@ class QuoteAPI(BaseAPI):
         next_time = last_time - timedelta(minutes=int(period))
         return next_time.strftime("%Y%m%d%H%M%S")
 
-    def _parse_date(self, date_str: str) -> datetime:
-        return datetime.strptime(date_str, "%Y-%m-%d")
+    def _parse_date(self, date_str: str, zone_info: ZoneInfo) -> datetime:
+        try:
+            return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=zone_info)
+        except ValueError:
+            return datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=zone_info)

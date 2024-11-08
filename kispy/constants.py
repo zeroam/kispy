@@ -2,6 +2,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Any, Literal
 
+from zoneinfo import ZoneInfo
+
 REAL_URL = "https://openapi.koreainvestment.com:9443"  # 실전투자 API
 VIRTUAL_URL = "https://openapivts.koreainvestment.com:29443"  # 모의투자 API
 
@@ -10,7 +12,7 @@ RATE_LIMIT_PER_SECOND = 19  # Maximum 19 calls per second
 RATE_LIMIT_WINDOW = 1.0  # Window size in seconds
 
 Nation = Literal["KR", "US", "JP", "CN", "HK", "VN"]
-ExchangeCode = Literal["NAS", "NYS", "AMS", "HKS", "HNX", "HSX", "SHI", "SHS", "SZI", "SZS", "TSE"]
+ExchangeCode = Literal["NAS", "NYS", "AMS", "HKS", "HNX", "HSX", "SHI", "SHS", "SZI", "SZS", "TSE", "BAY", "BAQ", "BAA"]
 LongExchangeCode = Literal["NASD", "NYSE", "AMEX", "SEHK", "SHAA", "SZAA", "TKSE", "HASE", "VNSE"]
 
 NationExchangeCodeMap: dict[Nation, list[ExchangeCode]] = {
@@ -32,6 +34,23 @@ ExchangeLongCodeMap: dict[ExchangeCode, LongExchangeCode] = {
     "SZI": "SZAA",  # 중국심천지수
     "HSX": "HASE",  # 베트남 하노이
     "HNX": "VNSE",  # 베트남 호치민
+}
+
+TimeZoneMap: dict[ExchangeCode, ZoneInfo] = {
+    "HKS": ZoneInfo("Asia/Hong_Kong"),
+    "NYS": ZoneInfo("America/New_York"),
+    "NAS": ZoneInfo("America/New_York"),
+    "AMS": ZoneInfo("Europe/Amsterdam"),
+    "TSE": ZoneInfo("Asia/Tokyo"),
+    "SHS": ZoneInfo("Asia/Shanghai"),
+    "SZS": ZoneInfo("Asia/Shanghai"),
+    "SHI": ZoneInfo("Asia/Shanghai"),
+    "SZI": ZoneInfo("Asia/Shanghai"),
+    "HSX": ZoneInfo("Asia/Ho_Chi_Minh"),
+    "HNX": ZoneInfo("Asia/Ho_Chi_Minh"),
+    "BAY": ZoneInfo("America/New_York"),
+    "BAQ": ZoneInfo("America/New_York"),
+    "BAA": ZoneInfo("America/New_York"),
 }
 
 Period = Literal[

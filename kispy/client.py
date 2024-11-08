@@ -111,11 +111,6 @@ class KisClientV2:
                 for history in histories
             ]
         else:
-            # start_date가 한달 이상 초과할경우 에러
-            now = datetime.now()
-            if (now - datetime.strptime(start_date, "%Y-%m-%d")).days > 30:
-                raise ValueError("start_date can't be exceeded 1 month")
-
             minutes = PERIOD_TO_MINUTES[period]
             histories = self.client.overseas_stock.quote.get_stock_price_history_by_minute(
                 symbol=market_symbol.symbol,
