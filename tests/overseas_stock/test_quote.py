@@ -6,27 +6,28 @@ from kispy.auth import KisAuth
 from kispy.client import KisClient
 
 
-@freeze_time("2024-01-03")
 def test_get_stock_price_history(auth: KisAuth):
     quote = KisClient(auth).overseas_stock.quote
     start_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
     end_date = datetime.now().strftime("%Y-%m-%d")
+    start_date = "2024-01-01"
+    end_date = "2024-01-03"
     resp = quote.get_stock_price_history("AAPL", "NAS", start_date, end_date)
 
     assert len(resp) == 2
 
 
-@freeze_time("2024-01-01")
 def test_get_stock_price_history_with_empty(auth: KisAuth):
     quote = KisClient(auth).overseas_stock.quote
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-    today = datetime.now().strftime("%Y-%m-%d")
+    yesterday = "2024-12-31"
+    today = "2024-01-01"
     resp = quote.get_stock_price_history("AAPL", "NAS", yesterday, today)
 
     assert resp == []
 
 
-@freeze_time("2024-01-03")
+@freeze_time("2024-01-03", tz_offset=5)
 def test_get_stock_price_history_with_end_date_none(auth: KisAuth):
     quote = KisClient(auth).overseas_stock.quote
     resp = quote.get_stock_price_history("AAPL", "NAS", "2024-01-01", None)
@@ -34,7 +35,7 @@ def test_get_stock_price_history_with_end_date_none(auth: KisAuth):
     assert len(resp) == 2
 
 
-@freeze_time("2024-01-03")
+@freeze_time("2024-01-03", tz_offset=5)
 def test_get_stock_price_history_with_end_date_future(auth: KisAuth):
     quote = KisClient(auth).overseas_stock.quote
     today = datetime.now().strftime("%Y-%m-%d")
@@ -62,6 +63,13 @@ def test_get_stock_price_history_with_asc(auth: KisAuth):
     assert resp[0]["xymd"] == "20070831"
 
 
+def test_get_stock_price_history_with_limit(auth: KisAuth):
+    quote = KisClient(auth).overseas_stock.quote
+    resp = quote.get_stock_price_history("AAPL", "NAS", limit=5)
+
+    assert len(resp) == 5
+
+
 def test_get_stock_price_history_by_minute(auth: KisAuth):
     quote = KisClient(auth).overseas_stock.quote
     # 주말을 제외한 최근 하루의 분봉 시세 조회
@@ -74,7 +82,7 @@ def test_get_stock_price_history_by_minute(auth: KisAuth):
         exchange_code="NAS",
         start_date=(yesterday - timedelta(days=1)).strftime("%Y-%m-%d"),
         end_date=yesterday.strftime("%Y-%m-%d"),
-        period="1m",
+        period="1",
         limit=None,
     )
 

@@ -61,11 +61,12 @@ class KisClientV2:
     def fetch_ohlcv(
         self,
         symbol: str,
-        start_date: str,
+        start_date: str | None = None,
         end_date: str | None = None,
         period: Period = "d",
         is_adjust: bool = True,
         desc: bool = False,
+        limit: int | None = None,
     ) -> list[OHLCV]:
         """
         주식 기간별 시세 조회
@@ -98,6 +99,7 @@ class KisClientV2:
                 period=period,
                 is_adjust=is_adjust,
                 desc=desc,
+                limit=limit,
             )
             result = [
                 OHLCV(
@@ -119,7 +121,7 @@ class KisClientV2:
                 start_date=start_date,
                 end_date=end_date,
                 desc=desc,
-                limit=None,
+                limit=limit,
             )
             result = [
                 OHLCV(

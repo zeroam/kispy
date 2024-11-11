@@ -71,11 +71,12 @@ class QuoteAPI(BaseAPI):
         self,
         symbol: str,
         exchange_code: ExchangeCode,
-        start_date: str,
+        start_date: str | None = None,
         end_date: str | None = None,
         period: str = "d",
         is_adjust: bool = True,
         desc: bool = False,
+        limit: int | None = None,
     ) -> list[dict]:
         """해외주식 기간별시세[v1_해외주식-010]
         https://apiportal.koreainvestment.com/apiservice/apiservice-oversea-stock-quotations#L_0e9fb2ba-bbac-4735-925a-a35e08c9a790
@@ -107,7 +108,7 @@ class QuoteAPI(BaseAPI):
         headers["tr_id"] = "HHDFS76240000"
 
         zone_info = TimeZoneMap[exchange_code]
-        parsed_start_date = self._parse_date(start_date, zone_info)
+        parsed_start_date = self._parse_date(start_date, zone_info) if start_date else None
         parsed_end_date = min(
             self._parse_date(end_date or datetime.now().strftime("%Y-%m-%d"), zone_info),
             datetime.now(tz=zone_info),
@@ -115,7 +116,7 @@ class QuoteAPI(BaseAPI):
 
         result: list[dict] = []
         cur_end_date = parsed_end_date
-        while cur_end_date >= parsed_start_date:
+        while cur_end_date >= parsed_start_date if parsed_start_date else True:
             resp = self._request(
                 "GET",
                 url,
@@ -130,17 +131,26 @@ class QuoteAPI(BaseAPI):
                     "KEYB": "",
                 },
             )
-
-            items = [
-                data
-                for data in resp.json["output2"]
-                if data and datetime.strptime(data["xymd"], "%Y%m%d") >= parsed_start_date
-            ]
+            items = resp.json["output2"]
             if not items:
                 break
 
-            result.extend(items)
-            cur_end_date = datetime.strptime(items[-1]["xymd"], "%Y%m%d") - timedelta(days=1)
+            filtered_items = []
+            for item in items:
+                record_date = datetime.strptime(item["xymd"], "%Y%m%d").replace(tzinfo=zone_info)
+                if parsed_start_date and record_date < parsed_start_date:
+                    continue
+                filtered_items.append(item)
+
+            if not filtered_items:
+                break
+
+            result.extend(filtered_items)
+            cur_end_date = datetime.strptime(items[-1]["xymd"], "%Y%m%d").replace(tzinfo=zone_info) - timedelta(days=1)
+
+            if limit and len(result) >= limit:
+                result = result[:limit]
+                break
 
         if not desc:
             result.reverse()
