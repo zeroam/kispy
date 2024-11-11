@@ -1,6 +1,7 @@
 import threading
 import time
 from collections import deque
+from datetime import datetime
 from typing import Deque
 
 from kispy.constants import RATE_LIMIT_PER_SECOND, RATE_LIMIT_WINDOW
@@ -34,7 +35,7 @@ class RateLimiter:
     def wait_if_needed(self) -> None:
         """Wait if the rate limit would be exceeded by this request."""
         with self._lock:
-            now = time.monotonic()
+            now = datetime.now().timestamp()
             self._clean_expired_requests(now)
 
             if len(self._requests) >= self.max_requests:

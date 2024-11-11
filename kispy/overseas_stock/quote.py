@@ -192,13 +192,40 @@ class QuoteAPI(BaseAPI):
         parsed_start_date = self._parse_date(start_date, zone_info) if start_date else None
         parsed_end_date = self._parse_date(end_date, zone_info) if end_date else now
 
-        result: list[dict] = []
-        if parsed_end_date >= now:
-            next_value = ""
-            keyb = ""
+        # 먼저 최신 데이터를 한 번 조회하여 마지막 거래 시점 확인
+        temp_records = self._request(
+            method="get",
+            url=url,
+            headers=headers,
+            params={
+                "AUTH": "",
+                "EXCD": exchange_code,
+                "SYMB": symbol,
+                "NMIN": period,
+                "PINC": "1",
+                "NEXT": "",
+                "NREC": "1",
+                "FILL": "",
+                "KEYB": "",
+            },
+        ).json["output2"]
+
+        if temp_records:
+            latest_record = temp_records[0]
+            latest_time = datetime.strptime(latest_record["xymd"] + latest_record["xhms"], "%Y%m%d%H%M%S").replace(
+                tzinfo=zone_info
+            )
+            if parsed_end_date >= latest_time:
+                next_value = ""
+                keyb = ""
+            else:
+                next_value = "1"
+                keyb = parsed_end_date.strftime("%Y%m%d%H%M%S")
         else:
             next_value = "1"
             keyb = parsed_end_date.strftime("%Y%m%d%H%M%S")
+
+        result: list[dict] = []
         while limit is None or len(result) < limit:
             size = min(limit - len(result), 120) if limit else 120
             params = {

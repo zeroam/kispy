@@ -111,8 +111,8 @@ def test_get_stock_price_history_by_minute_not_exists(auth: KisAuth):
     resp = quote.get_stock_price_history_by_minute(
         symbol="AAPL",
         exchange_code="NAS",
-        start_date="2024-11-01",
-        end_date="2024-11-02",
+        start_date="2024-11-02",
+        end_date="2024-11-03",
         limit=10,
     )
 
