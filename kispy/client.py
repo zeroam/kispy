@@ -1,9 +1,23 @@
 import logging
 from datetime import datetime
+from decimal import Decimal
 from typing import Literal
 
 from kispy.auth import KisAuth
-from kispy.constants import OHLCV, PERIOD_TO_MINUTES, REAL_URL, VIRTUAL_URL, ExchangeLongCodeMap, Nation, Period, Symbol
+from kispy.constants import (
+    OHLCV,
+    PERIOD_TO_MINUTES,
+    REAL_URL,
+    VIRTUAL_URL,
+    AccountSummary,
+    Balance,
+    ExchangeLongCodeMap,
+    Nation,
+    PendingOrder,
+    Period,
+    Position,
+    Symbol,
+)
 from kispy.domestic_stock import DomesticStock
 from kispy.overseas_stock import OverseasStock
 from kispy.utils import get_symbol_map
@@ -57,6 +71,87 @@ class KisClientV2:
         self.load_market_data()
         market_symbol = self._market[symbol]
         return self.client.overseas_stock.quote.get_price(market_symbol.symbol, market_symbol.exchange_code)
+
+    def fetch_balance(self) -> Balance:
+        """잔고 조회
+
+        Returns:
+            Balance: 외화 잔고
+        """
+        if self.nation == "KR":
+            # TODO: 국내주식 잔고 조회
+            raise NotImplementedError("국내주식 잔고 조회는 아직 구현되지 않았습니다.")
+
+        # TODO: 다른 국가 지원
+        response = self.client.overseas_stock.account.inquire_psamount("AAPL", "NASD")
+        return Balance(
+            available_balance=response["ord_psbl_frcr_amt"],
+            buyable_balance=response["ovrs_ord_psbl_amt"],
+            exchange_rate=response["exrt"],
+            currency=response["tr_crcy_cd"],
+        )
+
+    def fetch_positions(self) -> list[Position]:
+        """보유종목 조회
+
+        Returns:
+            list[Position]: 외화 보유종목
+        """
+        if self.nation == "KR":
+            # TODO: 국내주식 보유종목 조회
+            raise NotImplementedError("국내주식 보유종목 조회는 아직 구현되지 않았습니다.")
+
+        # TODO: 다른 국가 지원
+        response = self.client.overseas_stock.account.inquire_balance(exchange_code="NASD", currency="USD")
+        # TODO: 대출유형 추가 필요
+        return [
+            Position(
+                symbol=position["ovrs_pdno"],
+                item_name=position["ovrs_item_name"],
+                quantity=position["ord_psbl_qty"],
+                average_price=position["pchs_avg_pric"],
+                unrealized_pnl=position["frcr_evlu_pfls_amt"],
+                pnl_percentage=position["evlu_pfls_rt"],
+                current_price=position["now_pric2"],
+                market_value=position["ovrs_stck_evlu_amt"],
+            )
+            for position in response["output1"]
+        ]
+
+    def fetch_pending_orders(self) -> list[PendingOrder]:
+        if self.nation == "KR":
+            # TODO: 국내주식 예약주문 조회
+            raise NotImplementedError("국내주식 예약주문 조회는 아직 구현되지 않았습니다.")
+
+        # TODO: 다른 국가 지원
+        orders = self.client.overseas_stock.account.inquire_nccs("NASD")
+        result: list[PendingOrder] = []
+        for order in orders:
+            requested_price = order["ft_ord_unpr3"]
+            remaining_quantity = order["nccs_qty"]
+            locked_amount = Decimal(requested_price) * Decimal(remaining_quantity)
+            result.append(
+                PendingOrder(
+                    order_id=order["odno"],
+                    symbol=order["pdno"],
+                    side="buy" if order["sll_buy_dvsn_cd_name"] == "02" else "sell",
+                    requested_price=requested_price,
+                    requested_quantity=order["ft_ord_qty"],
+                    filled_amount=order["ft_ccld_qty"],
+                    average_price=order["ft_ccld_unpr3"],
+                    remaining_quantity=remaining_quantity,
+                    order_amount=order["ft_ccld_amt3"],
+                    locked_amount=str(locked_amount),
+                )
+            )
+        return result
+
+    def fetch_account_summary(self) -> AccountSummary:
+        """총 자산 정보를 조회"""
+        balance = self.fetch_balance()
+        positions = self.fetch_positions()
+        pending_orders = self.fetch_pending_orders()
+        return AccountSummary.create(balance, positions, pending_orders)
 
     def fetch_ohlcv(
         self,

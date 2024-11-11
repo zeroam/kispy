@@ -4,6 +4,12 @@ class KispyException(Exception):
     pass
 
 
+class InvalidAccount(KispyException):
+    """Invalid account."""
+
+    pass
+
+
 class InvalidSymbol(KispyException):
     """Invalid symbol."""
 
