@@ -11,7 +11,7 @@ from kispy.constants import ExchangeCode, TimeZoneMap
 
 
 class QuoteAPI(BaseAPI):
-    def get_price(self, symbol: str, exchange_code: ExchangeCode) -> float:
+    def get_price(self, symbol: str, exchange_code: ExchangeCode) -> str:
         """해외주식 현재체결가[v1_해외주식-009]
 
         Args:
@@ -64,8 +64,7 @@ class QuoteAPI(BaseAPI):
         }
 
         resp = self._request(method="get", url=url, headers=headers, params=params)
-        # TODO: resp 타입 정의하기
-        return float(resp.json["output"]["last"])
+        return resp.json["output"]["last"]  # type: ignore[no-any-return]
 
     def get_stock_price_history(
         self,

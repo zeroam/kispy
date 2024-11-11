@@ -63,7 +63,7 @@ class KisClientV2:
         if not self._market or reload:
             self._market = get_symbol_map(self.nation)
 
-    def get_price(self, symbol: str) -> float:
+    def get_price(self, symbol: str) -> str:
         if self.nation == "KR":
             # TODO: 국내주식 현재가 조회
             raise NotImplementedError("국내주식 현재가 조회는 아직 구현되지 않았습니다.")
