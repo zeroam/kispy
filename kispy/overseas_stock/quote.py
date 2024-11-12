@@ -87,8 +87,8 @@ class QuoteAPI(BaseAPI):
                 SHS : 상해, SZS : 심천, SHI : 상해지수, SZI : 심천지수, HSX : 호치민, HNX : 하노이,
                 BAY : 뉴욕(주간), BAQ : 나스닥(주간), BAA : 아멕스(주간)
             )
-            start_date (str): 조회시작일자 ("YYYY-MM-DD" 형식)
-            end_date (str): 조회종료일자 ("YYYY-MM-DD" 형식)
+            start_date (str): 조회시작일자 (YYYYMMDD)
+            end_date (str): 조회종료일자 (YYYYMMDD)
             period (str): 조회기간, 기본값은 "d" (일) (옵션: "d" (일), "w" (주), "M" (월))
             is_adjust (bool): 수정주가 여부, 기본값은 True
             desc (bool): 시간 역순 정렬 여부, 기본값은 False
@@ -108,10 +108,9 @@ class QuoteAPI(BaseAPI):
 
         zone_info = TimeZoneMap[exchange_code]
         parsed_start_date = self._parse_date(start_date, zone_info) if start_date else None
-        parsed_end_date = min(
-            self._parse_date(end_date or datetime.now().strftime("%Y-%m-%d"), zone_info),
-            datetime.now(tz=zone_info),
-        )
+        now = datetime.now(tz=zone_info)
+        parsed_end_date = self._parse_date(end_date, zone_info) if end_date else now
+        parsed_end_date = min(parsed_end_date, now)
 
         result: list[dict] = []
         cur_end_date = parsed_end_date
@@ -136,7 +135,7 @@ class QuoteAPI(BaseAPI):
 
             filtered_items = []
             for item in items:
-                record_date = datetime.strptime(item["xymd"], "%Y%m%d").replace(tzinfo=zone_info)
+                record_date = self._parse_date(item["xymd"], zone_info)
                 if parsed_start_date and record_date < parsed_start_date:
                     continue
                 filtered_items.append(item)
@@ -145,7 +144,7 @@ class QuoteAPI(BaseAPI):
                 break
 
             result.extend(filtered_items)
-            cur_end_date = datetime.strptime(items[-1]["xymd"], "%Y%m%d").replace(tzinfo=zone_info) - timedelta(days=1)
+            cur_end_date = self._parse_date(items[-1]["xymd"], zone_info) - timedelta(days=1)
 
             if limit and len(result) >= limit:
                 result = result[:limit]
@@ -173,8 +172,8 @@ class QuoteAPI(BaseAPI):
             symbol (str): 종목코드
             exchange_code (str): 거래소코드
             period (str): 조회기간, 기본값은 "1" (1분)
-            start_date (str | None): 조회시작일자 ("YYYY-MM-DD" 형식)
-            end_date (str | None): 조회종료일자 ("YYYY-MM-DD" 형식)
+            start_date (str | None): 조회시작일자 (YYYYMMDD)
+            end_date (str | None): 조회종료일자 (YYYYMMDD)
             limit (int | None): 조회건수, 기본값은 120, None일 경우 최대 조회 가능 건수까지 조회
 
         Returns:
@@ -211,9 +210,7 @@ class QuoteAPI(BaseAPI):
 
         if temp_records:
             latest_record = temp_records[0]
-            latest_time = datetime.strptime(latest_record["xymd"] + latest_record["xhms"], "%Y%m%d%H%M%S").replace(
-                tzinfo=zone_info
-            )
+            latest_time = self._parse_date(latest_record["xymd"] + latest_record["xhms"], zone_info)
             if parsed_end_date >= latest_time:
                 next_value = ""
                 keyb = ""
@@ -246,7 +243,7 @@ class QuoteAPI(BaseAPI):
 
             filtered_records = []
             for record in records:
-                record_date = datetime.strptime(record["xymd"] + record["xhms"], "%Y%m%d%H%M%S").replace(tzinfo=zone_info)
+                record_date = self._parse_date(record["xymd"] + record["xhms"], zone_info)
                 if parsed_start_date and record_date < parsed_start_date:
                     continue
                 filtered_records.append(record)
@@ -273,7 +270,8 @@ class QuoteAPI(BaseAPI):
         return next_time.strftime("%Y%m%d%H%M%S")
 
     def _parse_date(self, date_str: str, zone_info: ZoneInfo) -> datetime:
+        date_str = date_str.replace("-", "")
         try:
-            return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=zone_info)
+            return datetime.strptime(date_str, "%Y%m%d").replace(tzinfo=zone_info)
         except ValueError:
-            return datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=zone_info)
+            return datetime.strptime(date_str, "%Y%m%d%H%M%S").replace(tzinfo=zone_info)

@@ -10,7 +10,7 @@ def test_get_stock_price_history(auth: KisAuth):
     quote = KisClient(auth).overseas_stock.quote
     start_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
     end_date = datetime.now().strftime("%Y-%m-%d")
-    start_date = "2024-01-01"
+    start_date = "20240101"
     end_date = "2024-01-03"
     resp = quote.get_stock_price_history("AAPL", "NAS", start_date, end_date)
 
@@ -20,8 +20,8 @@ def test_get_stock_price_history(auth: KisAuth):
 def test_get_stock_price_history_with_empty(auth: KisAuth):
     quote = KisClient(auth).overseas_stock.quote
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-    yesterday = "2024-12-31"
-    today = "2024-01-01"
+    yesterday = "20241231"
+    today = "20240101"
     resp = quote.get_stock_price_history("AAPL", "NAS", yesterday, today)
 
     assert resp == []
@@ -30,7 +30,7 @@ def test_get_stock_price_history_with_empty(auth: KisAuth):
 @freeze_time("2024-01-03", tz_offset=5)
 def test_get_stock_price_history_with_end_date_none(auth: KisAuth):
     quote = KisClient(auth).overseas_stock.quote
-    resp = quote.get_stock_price_history("AAPL", "NAS", "2024-01-01", None)
+    resp = quote.get_stock_price_history("AAPL", "NAS", "20240101", None)
 
     assert len(resp) == 2
 
@@ -73,15 +73,15 @@ def test_get_stock_price_history_with_limit(auth: KisAuth):
 def test_get_stock_price_history_by_minute(auth: KisAuth):
     quote = KisClient(auth).overseas_stock.quote
     # 주말을 제외한 최근 하루의 분봉 시세 조회
-    yesterday = datetime.now() - timedelta(days=1)
+    yesterday = datetime.now() - timedelta(days=2)
     while yesterday.weekday() >= 5:
         yesterday -= timedelta(days=1)
 
     resp = quote.get_stock_price_history_by_minute(
         symbol="AAPL",
         exchange_code="NAS",
-        start_date=(yesterday - timedelta(days=1)).strftime("%Y-%m-%d"),
-        end_date=yesterday.strftime("%Y-%m-%d"),
+        start_date=yesterday.strftime("%Y%m%d"),
+        end_date=(yesterday + timedelta(days=1)).strftime("%Y%m%d"),
         period="1",
         limit=None,
     )
@@ -91,15 +91,15 @@ def test_get_stock_price_history_by_minute(auth: KisAuth):
 
 def test_get_stock_price_history_by_minute_with_limit(auth: KisAuth):
     quote = KisClient(auth).overseas_stock.quote
-    yesterday = datetime.now() - timedelta(days=1)
+    yesterday = datetime.now() - timedelta(days=2)
     while yesterday.weekday() >= 5:
         yesterday -= timedelta(days=1)
 
     resp = quote.get_stock_price_history_by_minute(
         symbol="AAPL",
         exchange_code="NAS",
-        start_date=(yesterday - timedelta(days=1)).strftime("%Y-%m-%d"),
-        end_date=yesterday.strftime("%Y-%m-%d"),
+        start_date=yesterday.strftime("%Y%m%d"),
+        end_date=(yesterday + timedelta(days=1)).strftime("%Y%m%d"),
         limit=10,
     )
 

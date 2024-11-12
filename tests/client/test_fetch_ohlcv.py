@@ -46,7 +46,7 @@ def test_fetch_ohlcv_various_minute_period(
 ):
     client = KisClientV2(auth, "US")
     # 주말을 제외한 최근 하루의 분봉 시세 조회
-    yesterday = datetime.now() - timedelta(days=1)
+    yesterday = datetime.now() - timedelta(days=2)
     while yesterday.weekday() >= 5:
         yesterday -= timedelta(days=1)
     resp = client.fetch_ohlcv(
