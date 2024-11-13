@@ -100,13 +100,14 @@ class Order(BaseModel):
         revise_cancel_status = response["rvse_cncl_dvsn_name"]
         status: OrderStatus = "open"
         if process_status == "완료":
-            if reject_reason:
+            if reject_reason == "DFD 장종료로 취소":
+                status = "expired"
+            elif reject_reason:  # NOTE: 해당 케이스 검증 필요
                 status = "rejected"
-            elif revise_cancel_status == "취소":
-                # TODO: 실제로 취소 검증 필요
+            elif revise_cancel_status == "취소":  # NOTE: 실제로 취소 검증 필요
                 status = "canceled"
             else:
-                status = "closed"
+                status = "filled"
         elif process_status == "거부":
             status = "rejected"
 

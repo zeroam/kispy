@@ -22,6 +22,8 @@ class Token(BaseModel):
 
     def is_expired(self) -> bool:
         kst = pytz.timezone("Asia/Seoul")
+        logger.debug(f"now: {datetime.now(kst)}")
+        logger.debug(f"expired: {self.access_token_token_expired}")
         return datetime.now(kst) > self.access_token_token_expired
 
 
@@ -80,7 +82,7 @@ class KisAuth:
 
         token: Token | None = None
         if os.path.exists(self._file_path):
-            logger.debug("load token from pickle")
+            logger.debug(f"load token from pickle: {self._file_path}")
             with open(self._file_path, "rb") as f:
                 token = pickle.load(f)
                 logger.debug(f"loaded token: {token}")

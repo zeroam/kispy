@@ -9,7 +9,7 @@ def test_order_from_response_buy_completed():
     assert order.order_id == "0031381228"
     assert order.symbol == "TSLL"
     assert order.side == "buy"
-    assert order.status == "closed"
+    assert order.status == "filled"
     assert order.requested_price == "19.16000000"
     assert order.requested_quantity == "5"
     assert order.filled_quantity == "5"
@@ -25,7 +25,7 @@ def test_order_from_response_sell_completed():
     assert order.order_id == "0031385365"
     assert order.symbol == "TSLL"
     assert order.side == "sell"
-    assert order.status == "closed"
+    assert order.status == "filled"
     assert order.requested_price == "19.06000000"
     assert order.requested_quantity == "5"
     assert order.filled_quantity == "5"
@@ -51,12 +51,12 @@ def test_order_from_response_canceled():
     assert order.order_date == datetime(2024, 8, 1, 4, 30, 19)
 
 
-def test_order_from_response_rejected():
-    order = Order.from_response(rejected_response)
+def test_order_from_response_expired():
+    order = Order.from_response(expired_response)
 
     assert order.order_id == "0030036440"
     assert order.order_date == datetime(2024, 11, 11, 18, 41, 14)
-    assert order.status == "rejected"
+    assert order.status == "expired"
     assert order.symbol == "TSLL"
     assert order.side == "buy"
     assert order.requested_price == "11.00000000"
@@ -171,7 +171,7 @@ canceled_response = {
 }
 
 
-rejected_response = {
+expired_response = {
     "ord_dt": "20241111",  # 주문접수 일자 (현지시각 기준)
     "ord_gno_brno": "01790",  # 계좌 개설 시 관리점에서 선택한 영업점의 고유번호
     "odno": "0030036440",  # 주문번호

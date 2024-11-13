@@ -14,7 +14,8 @@ ExchangeCode = Literal["NAS", "NYS", "AMS", "HKS", "HNX", "HSX", "SHI", "SHS", "
 LongExchangeCode = Literal["NASD", "NYSE", "AMEX", "SEHK", "SHAA", "SZAA", "TKSE", "HASE", "VNSE"]
 Currency = Literal["USD", "HKD", "CNY", "JPY", "VND"]
 OrderSide = Literal["buy", "sell"]
-OrderStatus = Literal["open", "canceled", "closed", "rejected"]
+OrderStatus = Literal["open", "filled", "canceled", "rejected", "expired"]
+
 
 NationExchangeCodeMap: dict[Nation, list[ExchangeCode]] = {
     "US": ["NAS", "NYS", "AMS"],
