@@ -4,7 +4,8 @@ import zipfile
 
 import requests
 
-from kispy.constants import ExchangeCode, Nation, NationExchangeCodeMap, Symbol
+from kispy.constants import ExchangeCode, Nation, NationExchangeCodeMap
+from kispy.models.market import Symbol
 
 
 def get_overseas_master_data(exchange_code: ExchangeCode) -> list[dict]:

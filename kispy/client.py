@@ -1,24 +1,20 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Literal
 
 from kispy.auth import KisAuth
 from kispy.constants import (
-    OHLCV,
     PERIOD_TO_MINUTES,
     REAL_URL,
     VIRTUAL_URL,
-    AccountSummary,
-    Balance,
     ExchangeLongCodeMap,
     Nation,
-    PendingOrder,
     Period,
-    Position,
-    Symbol,
 )
 from kispy.domestic_stock import DomesticStock
+from kispy.models.account import AccountSummary, Balance, Order, PendingOrder, Position
+from kispy.models.market import OHLCV, Symbol
 from kispy.overseas_stock import OverseasStock
 from kispy.utils import get_symbol_map
 
@@ -145,6 +141,17 @@ class KisClientV2:
                 )
             )
         return result
+
+    def fetch_order(self, order_id: str, lookback_days: int = 30) -> Order | None:
+        now = datetime.now()
+        start_date = (now - timedelta(days=lookback_days)).strftime("%Y%m%d")
+        end_date = now.strftime("%Y%m%d")
+        orders = self.client.overseas_stock.order.inquire_orders(start_date, end_date, order_id)
+        if not orders:
+            return None
+
+        order = orders[0]
+        return Order.from_response(order)
 
     def fetch_account_summary(self) -> AccountSummary:
         """총 자산 정보를 조회"""
