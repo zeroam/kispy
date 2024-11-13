@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-from decimal import Decimal
 from typing import Literal
 
 from kispy.auth import KisAuth
@@ -80,12 +79,7 @@ class KisClientV2:
 
         # TODO: 다른 국가 지원
         response = self.client.overseas_stock.account.inquire_psamount("AAPL", "NASD")
-        return Balance(
-            available_balance=response["ord_psbl_frcr_amt"],
-            buyable_balance=response["ovrs_ord_psbl_amt"],
-            exchange_rate=response["exrt"],
-            currency=response["tr_crcy_cd"],
-        )
+        return Balance.from_response(response)
 
     def fetch_positions(self) -> list[Position]:
         """보유종목 조회
@@ -99,20 +93,7 @@ class KisClientV2:
 
         # TODO: 다른 국가 지원
         response = self.client.overseas_stock.account.inquire_balance(exchange_code="NASD", currency="USD")
-        # TODO: 대출유형 추가 필요
-        return [
-            Position(
-                symbol=position["ovrs_pdno"],
-                item_name=position["ovrs_item_name"],
-                quantity=position["ord_psbl_qty"],
-                average_price=position["pchs_avg_pric"],
-                unrealized_pnl=position["frcr_evlu_pfls_amt"],
-                pnl_percentage=position["evlu_pfls_rt"],
-                current_price=position["now_pric2"],
-                market_value=position["ovrs_stck_evlu_amt"],
-            )
-            for position in response["output1"]
-        ]
+        return [Position.from_response(position) for position in response["output1"]]
 
     def fetch_pending_orders(self) -> list[PendingOrder]:
         if self.nation == "KR":
@@ -121,26 +102,7 @@ class KisClientV2:
 
         # TODO: 다른 국가 지원
         orders = self.client.overseas_stock.account.inquire_nccs("NASD")
-        result: list[PendingOrder] = []
-        for order in orders:
-            requested_price = order["ft_ord_unpr3"]
-            remaining_quantity = order["nccs_qty"]
-            locked_amount = Decimal(requested_price) * Decimal(remaining_quantity)
-            result.append(
-                PendingOrder(
-                    order_id=order["odno"],
-                    symbol=order["pdno"],
-                    side="buy" if order["sll_buy_dvsn_cd_name"] == "02" else "sell",
-                    requested_price=requested_price,
-                    requested_quantity=order["ft_ord_qty"],
-                    filled_amount=order["ft_ccld_qty"],
-                    average_price=order["ft_ccld_unpr3"],
-                    remaining_quantity=remaining_quantity,
-                    order_amount=order["ft_ccld_amt3"],
-                    locked_amount=str(locked_amount),
-                )
-            )
-        return result
+        return [PendingOrder.from_response(order) for order in orders]
 
     def fetch_order(self, order_id: str, lookback_days: int = 30) -> Order | None:
         now = datetime.now()
@@ -203,17 +165,7 @@ class KisClientV2:
                 desc=desc,
                 limit=limit,
             )
-            result = [
-                OHLCV(
-                    date=datetime.strptime(history["xymd"], "%Y%m%d"),
-                    open=history["open"],
-                    high=history["high"],
-                    low=history["low"],
-                    close=history["clos"],
-                    volume=history["tvol"],
-                )
-                for history in histories
-            ]
+            result = [OHLCV.from_response(history) for history in histories]
         else:
             minutes = PERIOD_TO_MINUTES[period]
             histories = self.client.overseas_stock.quote.get_stock_price_history_by_minute(
@@ -225,17 +177,7 @@ class KisClientV2:
                 desc=desc,
                 limit=limit,
             )
-            result = [
-                OHLCV(
-                    date=datetime.strptime(history["xymd"] + history["xhms"], "%Y%m%d%H%M%S"),
-                    open=history["open"],
-                    high=history["high"],
-                    low=history["low"],
-                    close=history["last"],
-                    volume=history["evol"],
-                )
-                for history in histories
-            ]
+            result = [OHLCV.from_response(history) for history in histories]
 
         return result
 

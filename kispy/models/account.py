@@ -4,19 +4,26 @@ from decimal import Decimal
 from typing import Any, Self
 
 from kispy.constants import Currency, OrderSide, OrderStatus
-from kispy.models.base import BaseModel
+from kispy.models.base import CustomBaseModel
 
 
-@dataclass
-class Balance:
+class Balance(CustomBaseModel):
     available_balance: str  # 주문가능외화금액
     buyable_balance: str  # 수수료까지 고려한 매수가능외화금액 (거래수수료 0.25% 포함)
     exchange_rate: str  # 환율
     currency: Currency  # 통화
 
+    @classmethod
+    def from_response(cls, response: dict[str, Any]) -> Self:
+        return cls(
+            available_balance=response["ord_psbl_frcr_amt"],
+            buyable_balance=response["ovrs_ord_psbl_amt"],
+            exchange_rate=response["exrt"],
+            currency=response["tr_crcy_cd"],
+        )
 
-@dataclass
-class Position:
+
+class Position(CustomBaseModel):
     symbol: str  # 종목코드
     item_name: str  # 종목명
     quantity: str  # 보유수량
@@ -26,9 +33,22 @@ class Position:
     current_price: str  # 현재가격
     market_value: str  # 평가금액
 
+    @classmethod
+    def from_response(cls, response: dict[str, Any]) -> Self:
+        # TODO: 대출유형 추가 필요
+        return cls(
+            symbol=response["ovrs_pdno"],
+            item_name=response["ovrs_item_name"],
+            quantity=response["ord_psbl_qty"],
+            average_price=response["pchs_avg_pric"],
+            unrealized_pnl=response["frcr_evlu_pfls_amt"],
+            pnl_percentage=response["evlu_pfls_rt"],
+            current_price=response["now_pric2"],
+            market_value=response["ovrs_stck_evlu_amt"],
+        )
 
-@dataclass
-class PendingOrder:
+
+class PendingOrder(CustomBaseModel):
     order_id: str  # 주문번호
     symbol: str  # 종목코드
     side: OrderSide  # 주문유형
@@ -39,6 +59,24 @@ class PendingOrder:
     average_price: str  # 체결가격
     order_amount: str  # 체결금액
     locked_amount: str  # 주문중금액
+
+    @classmethod
+    def from_response(cls, response: dict[str, Any]) -> Self:
+        requested_price = response["ft_ord_unpr3"]
+        remaining_quantity = response["nccs_qty"]
+        locked_amount = Decimal(requested_price) * Decimal(remaining_quantity)
+        return cls(
+            order_id=response["odno"],
+            symbol=response["pdno"],
+            side="buy" if response["sll_buy_dvsn_cd_name"] == "02" else "sell",
+            requested_price=requested_price,
+            requested_quantity=response["ft_ord_qty"],
+            filled_amount=response["ft_ccld_qty"],
+            average_price=response["ft_ccld_unpr3"],
+            remaining_quantity=remaining_quantity,
+            order_amount=response["ft_ccld_amt3"],
+            locked_amount=str(locked_amount),
+        )
 
 
 @dataclass
@@ -78,8 +116,7 @@ class AccountSummary:
         )
 
 
-@dataclass
-class Order(BaseModel):
+class Order(CustomBaseModel):
     order_id: str
     symbol: str
     side: OrderSide
