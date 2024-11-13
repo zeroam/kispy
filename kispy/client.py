@@ -185,7 +185,7 @@ class KisClientV2:
         self,
         symbol: str,
         side: Literal["buy", "sell"],
-        price: float,
+        price: str,
         quantity: int,
     ) -> str:
         """주문 생성

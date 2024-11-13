@@ -13,7 +13,7 @@ from kispy.base import BaseAPI
 
 
 class OrderAPI(BaseAPI):
-    def buy(self, symbol: str, exchange_code: str, quantity: int, price: float) -> dict:
+    def buy(self, symbol: str, exchange_code: str, quantity: int, price: str) -> dict:
         """해외주식주문[v1_해외주식-001] - 매수
 
         Args:
@@ -64,7 +64,7 @@ class OrderAPI(BaseAPI):
             "OVRS_EXCG_CD": exchange_code,
             "PDNO": symbol,
             "ORD_QTY": str(quantity),
-            "OVRS_ORD_UNPR": str(price),
+            "OVRS_ORD_UNPR": price,
             "ORD_SVR_DVSN_CD": "0",  # Default
             "ORD_DVSN": "00",  # 매수 00: 지정가, 32: LOO(장개시지정가), 34: LOC(장마감지정가)
         }
@@ -73,7 +73,7 @@ class OrderAPI(BaseAPI):
         # TODO: resp 타입 정의하기
         return resp.json["output"]  # type: ignore[no-any-return]
 
-    def sell(self, symbol: str, exchange_code: str, quantity: int, price: float) -> dict:
+    def sell(self, symbol: str, exchange_code: str, quantity: int, price: str) -> dict:
         """해외주식주문[v1_해외주식-001] - 매도
 
         Args:
@@ -121,7 +121,7 @@ class OrderAPI(BaseAPI):
             "OVRS_EXCG_CD": exchange_code,
             "PDNO": symbol,
             "ORD_QTY": str(quantity),
-            "OVRS_ORD_UNPR": str(price),
+            "OVRS_ORD_UNPR": price,
             "ORD_SVR_DVSN_CD": "0",  # Default
             "SLL_TYPE": "00",  # 판매유형: 00-매도
             "ORD_DVSN": "00",  # 매수 00: 지정가, 32: LOO(장개시지정가), 34: LOC(장마감지정가)
