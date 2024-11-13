@@ -43,7 +43,7 @@ class KisAuth:
 
     def _request(self, method: str, url: str, **kwargs) -> AuthResponse:
         resp = requests.request(method, url, **kwargs)
-        custom_resp = AuthResponse(status_code=resp.status_code, json=resp.json())
+        custom_resp = AuthResponse(headers=dict(resp.headers), status_code=resp.status_code, json=resp.json())
         custom_resp.raise_for_status()
         return custom_resp
 
@@ -59,9 +59,11 @@ class KisAuth:
             },
         )
         kst = pytz.timezone("Asia/Seoul")
-        access_token_token_expired = datetime.strptime(
-            resp.json["access_token_token_expired"],
-            "%Y-%m-%d %H:%M:%S",
+        access_token_token_expired = kst.localize(
+            datetime.strptime(
+                resp.json["access_token_token_expired"],
+                "%Y-%m-%d %H:%M:%S",
+            )
         ).replace(tzinfo=kst)
         return Token(
             token_type=resp.json["token_type"],
@@ -72,6 +74,7 @@ class KisAuth:
 
     @property
     def access_token(self) -> str:
+        logger.debug(f"access_token: {self._token}")
         if self._token is not None and not self._token.is_expired():
             return self._token.access_token
 

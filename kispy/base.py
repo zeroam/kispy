@@ -15,6 +15,6 @@ class BaseAPI:
         """공통 request 메서드"""
         RateLimiter().wait_if_needed()
         resp = requests.request(method, url, **kwargs)
-        custom_resp = BaseResponse(status_code=resp.status_code, json=resp.json())
+        custom_resp = BaseResponse(headers=dict(resp.headers), status_code=resp.status_code, json=resp.json())
         custom_resp.raise_for_status()
         return custom_resp

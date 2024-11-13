@@ -7,6 +7,8 @@
 - 해외주식 주문체결내역
 """
 
+from datetime import datetime
+
 from kispy.base import BaseAPI
 
 
@@ -240,8 +242,23 @@ class OrderAPI(BaseAPI):
         resp = self._request(method="get", url=url, headers=headers, params=params)
         return resp.json
 
-    def inquire_executed_orders(self, start_date: str, end_date: str) -> dict:
+    def inquire_orders(
+        self,
+        start_date: str,
+        end_date: str | None = None,
+        order_id: str | None = None,
+        limit: int | None = None,
+        desc: bool = True,
+    ) -> list[dict]:
         """해외주식 주문체결내역[v1_해외주식-007]
+
+        Args:
+            start_date (str): 조회시작일자 (YYYYMMDD)
+            end_date (str): 조회종료일자 (YYYYMMDD)
+            order_id (str | None): 주문번호
+
+        Returns:
+            dict: 주문 체결 내역
 
         일정 기간의 해외주식 주문 체결 내역을 확인하는 API입니다.
         실전계좌의 경우, 한 번의 호출에 최대 20건까지 확인 가능하며, 이후의 값은 연속조회를 통해 확인하실 수 있습니다.
@@ -266,25 +283,58 @@ class OrderAPI(BaseAPI):
 
         headers = self._auth.get_header()
         headers["tr_id"] = tr_id
-        params = {
-            "CANO": self._auth.cano,
-            "ACNT_PRDT_CD": self._auth.acnt_prdt_cd,
-            "PDNO": "%",  # 상품번호, 전종목일 경우 % 입력
-            "ORD_STRT_DT": start_date,  # 조회시작일자
-            "ORD_END_DT": end_date,  # 조회종료일자
-            "SLL_BUY_DVSN": "00",  # 매도매수구분: 00-전체, 01-매도, 02-매수
-            "CCLD_NCCS_DVSN": "00",  # 체결미체결구분: 00-전체, 01-체결, 02-미체결
-            "OVRS_EXCG_CD": "%",  # 거래소코드, 전종목일 경우 % 입력
-            "SORT_SQN": "DS",  # 정렬순서: DS-내림차순, AS-오름차순
-            "ORD_DT": "",
-            "ORD_GNO_BRNO": "",
-            "ODNO": "",
-            "CTX_AREA_FK200": "",
-            "CTX_AREA_NK200": "",
-        }
 
-        resp = self._request(method="get", url=url, headers=headers, params=params)
-        return resp.json
+        now = datetime.now()
+        cur_end_date = datetime.strptime(end_date, "%Y%m%d") if end_date else now
+        cur_end_date = min(cur_end_date, now)
+
+        result: list[dict] = []
+        ctx_area_fk200 = ""
+        ctx_area_nk200 = ""
+        tr_content = ""
+        while True:
+            headers["tr_cont"] = tr_content
+            params = {
+                "CANO": self._auth.cano,
+                "ACNT_PRDT_CD": self._auth.acnt_prdt_cd,
+                "PDNO": "%",
+                "ORD_STRT_DT": start_date,
+                "ORD_END_DT": end_date,
+                "SLL_BUY_DVSN": "00",  # 매도매수구분: 00-전체, 01-매도, 02-매수
+                "CCLD_NCCS_DVSN": "00",  # 체결미체결구분: 00-전체, 01-체결, 02-미체결
+                "OVRS_EXCG_CD": "%",  # 거래소코드, 전종목일 경우 % 입력
+                "SORT_SQN": "AS" if desc else "DS",  # 정렬순서: DS-정순, AS-역순
+                "ORD_DT": "",
+                "ORD_GNO_BRNO": "",
+                "ODNO": "",  # 주문번호로 검색 불가능
+                "CTX_AREA_FK200": ctx_area_fk200,
+                "CTX_AREA_NK200": ctx_area_nk200,
+            }
+
+            resp = self._request(method="get", url=url, headers=headers, params=params)
+            items = resp.json["output"]
+            ctx_area_fk200 = resp.json["ctx_area_fk200"].strip()
+            ctx_area_nk200 = resp.json["ctx_area_nk200"].strip()
+            tr_content = "N"
+            if len(items) == 0:
+                break
+
+            if order_id:
+                matching_items = [item for item in items if item["odno"] == order_id]
+                if matching_items:
+                    result.extend(matching_items)
+                    break
+            else:
+                result.extend(items)
+
+            if limit and len(result) >= limit:
+                result = result[:limit]
+                break
+
+            if resp.headers["tr_cont"] in ["D", "E"]:
+                break
+
+        return result
 
 
 def _get_buy_tr_id(exchange: str, is_real: bool) -> str:

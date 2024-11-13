@@ -4,10 +4,11 @@ from kispy.exceptions import KispyException
 
 
 class IResponse(Protocol):
+    headers: dict
     status_code: int
     json: dict
 
-    def __init__(self, status_code: int, json: dict): ...
+    def __init__(self, headers: dict, status_code: int, json: dict): ...
 
     def is_success(self) -> bool: ...
 
@@ -15,7 +16,8 @@ class IResponse(Protocol):
 
 
 class AuthResponse(IResponse):
-    def __init__(self, status_code: int, json: dict):
+    def __init__(self, headers: dict, status_code: int, json: dict):
+        self.headers = headers
         self.status_code = status_code
         self.json = json
 
@@ -31,7 +33,8 @@ class AuthResponse(IResponse):
 
 
 class BaseResponse(IResponse):
-    def __init__(self, status_code: int, json: dict):
+    def __init__(self, headers: dict, status_code: int, json: dict):
+        self.headers = headers
         self.status_code = status_code
         self.json = json
 
