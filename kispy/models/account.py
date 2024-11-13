@@ -10,6 +10,7 @@ from kispy.models.base import CustomBaseModel
 class Balance(CustomBaseModel):
     available_balance: str  # 주문가능외화금액
     buyable_balance: str  # 수수료까지 고려한 매수가능외화금액 (거래수수료 0.25% 포함)
+    integrated_balance: str  # 한국투자 앱 해외주식 주문화면내 "통합"인경우 주문가능 금액
     exchange_rate: str  # 환율
     currency: Currency  # 통화
 
@@ -18,6 +19,7 @@ class Balance(CustomBaseModel):
         return cls(
             available_balance=response["ord_psbl_frcr_amt"],
             buyable_balance=response["ovrs_ord_psbl_amt"],
+            integrated_balance=response["frcr_ord_psbl_amt1"],
             exchange_rate=response["exrt"],
             currency=response["tr_crcy_cd"],
         )
@@ -144,7 +146,7 @@ class Order(CustomBaseModel):
             elif revise_cancel_status == "취소":  # NOTE: 실제로 취소 검증 필요
                 status = "canceled"
             else:
-                status = "filled"
+                status = "closed"
         elif process_status == "거부":
             status = "rejected"
 
