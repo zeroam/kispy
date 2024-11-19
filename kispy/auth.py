@@ -2,7 +2,7 @@ import logging
 import os
 import pickle
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytz
 import requests
@@ -24,7 +24,7 @@ class Token(BaseModel):
         kst = pytz.timezone("Asia/Seoul")
         logger.debug(f"now: {datetime.now(kst)}")
         logger.debug(f"expired: {self.access_token_token_expired}")
-        return datetime.now(kst) > self.access_token_token_expired
+        return datetime.now(kst) >= self.access_token_token_expired - timedelta(hours=1)  # 1시간 전에 만료되면 갱신
 
 
 class KisAuth:
@@ -66,7 +66,7 @@ class KisAuth:
                 resp.json["access_token_token_expired"],
                 "%Y-%m-%d %H:%M:%S",
             )
-        ).replace(tzinfo=kst)
+        )
         return Token(
             token_type=resp.json["token_type"],
             access_token=resp.json["access_token"],
