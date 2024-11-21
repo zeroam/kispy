@@ -8,7 +8,7 @@ from kispy.models.base import CustomBaseModel
 
 
 class Balance(CustomBaseModel):
-    available_balance: str  # 주문가능외화금액
+    available_balance: str  # 주문가능외화금액 (실시간 반영되지 않음)
     buyable_balance: str  # 수수료까지 고려한 매수가능외화금액 (거래수수료 0.25% 포함)
     integrated_balance: str  # 한국투자 앱 해외주식 주문화면내 "통합"인경우 주문가능 금액
     exchange_rate: str  # 환율
@@ -96,12 +96,12 @@ class AccountSummary:
 
     @classmethod
     def create(cls, balance: Balance, positions: list[Position], pending_orders: list[PendingOrder]) -> Self:
-        # TODO: 원화 예수금 조회
-        available_balance = Decimal(balance.available_balance)
+        # TODO: 원화 예수금 조회(integrated_balance) 적용 여부 확인하기
+        remain_balance = Decimal(balance.buyable_balance)  # available_balance는 실시간 반영되지 않음
         total_position_market_value = sum(Decimal(position.market_value) for position in positions)
         total_position_price = sum(Decimal(position.average_price) * Decimal(position.quantity) for position in positions)
         total_locked_balance = sum(Decimal(order.locked_amount) for order in pending_orders)
-        total_balance = available_balance + total_position_market_value + total_locked_balance
+        total_balance = remain_balance + total_position_market_value + total_locked_balance
         total_unrealized_pnl = sum(Decimal(position.unrealized_pnl) for position in positions)
         total_pnl_percentage = (
             (total_position_market_value - total_position_price) / total_position_price * 100
@@ -111,8 +111,8 @@ class AccountSummary:
         return cls(
             total_balance=str(total_balance),
             locked_balance=str(total_locked_balance),
-            available_balance=str(available_balance),
-            buyable_balance=str(balance.buyable_balance),
+            available_balance=balance.available_balance,
+            buyable_balance=balance.buyable_balance,
             exchange_rate=balance.exchange_rate,
             currency=balance.currency,
             total_unrealized_pnl=str(total_unrealized_pnl),
