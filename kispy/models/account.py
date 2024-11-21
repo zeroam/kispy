@@ -103,7 +103,11 @@ class AccountSummary:
         total_locked_balance = sum(Decimal(order.locked_amount) for order in pending_orders)
         total_balance = available_balance + total_position_market_value + total_locked_balance
         total_unrealized_pnl = sum(Decimal(position.unrealized_pnl) for position in positions)
-        total_pnl_percentage = (total_position_market_value - total_position_price) / total_position_price * 100
+        total_pnl_percentage = (
+            (total_position_market_value - total_position_price) / total_position_price * 100
+            if total_position_price
+            else 0
+        )
         return cls(
             total_balance=str(total_balance),
             locked_balance=str(total_locked_balance),
