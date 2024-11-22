@@ -10,7 +10,7 @@ from kispy.models.base import CustomBaseModel
 class Balance(CustomBaseModel):
     available_balance: str  # 주문가능외화금액 (실시간 반영되지 않음)
     buyable_balance: str  # 수수료까지 고려한 매수가능외화금액 (거래수수료 0.25% 포함)
-    integrated_balance: str  # 한국투자 앱 해외주식 주문화면내 "통합"인경우 주문가능 금액
+    buyable_integrated_balance: str  # 한국투자 앱 해외주식 주문화면내 "통합"인경우 주문가능 금액
     exchange_rate: str  # 환율
     currency: Currency  # 통화
 
@@ -19,7 +19,7 @@ class Balance(CustomBaseModel):
         return cls(
             available_balance=response["ord_psbl_frcr_amt"],
             buyable_balance=response["ovrs_ord_psbl_amt"],
-            integrated_balance=response["frcr_ord_psbl_amt1"],
+            buyable_integrated_balance=response["frcr_ord_psbl_amt1"],
             exchange_rate=response["exrt"],
             currency=response["tr_crcy_cd"],
         )
@@ -83,10 +83,12 @@ class PendingOrder(CustomBaseModel):
 
 @dataclass
 class AccountSummary:
-    total_balance: str  # 총 자산
+    total_balance: str  # 총 자산 (외화 금액)
+    total_integrated_balance: str  # 총 통합 자산 (통합증거금 자산)
     locked_balance: str  # 주문중금액
     available_balance: str  # 주문가능외화금액
     buyable_balance: str  # 수수료까지 고려한 매수가능외화금액 (거래수수료 0.25% 포함)
+    buyable_integrated_balance: str  # 수수료까지 고려한 매수가능통합증거금 자산
     exchange_rate: str  # 환율
     currency: Currency  # 통화
     total_unrealized_pnl: str  # 총 외화평가손익금액
@@ -96,12 +98,13 @@ class AccountSummary:
 
     @classmethod
     def create(cls, balance: Balance, positions: list[Position], pending_orders: list[PendingOrder]) -> Self:
-        # TODO: 원화 예수금 조회(integrated_balance) 적용 여부 확인하기
-        remain_balance = Decimal(balance.buyable_balance)  # available_balance는 실시간 반영되지 않음
         total_position_market_value = sum(Decimal(position.market_value) for position in positions)
         total_position_price = sum(Decimal(position.average_price) * Decimal(position.quantity) for position in positions)
         total_locked_balance = sum(Decimal(order.locked_amount) for order in pending_orders)
-        total_balance = remain_balance + total_position_market_value + total_locked_balance
+        total_balance = Decimal(balance.buyable_balance) + total_position_market_value + total_locked_balance
+        total_integrated_balance = (
+            Decimal(balance.buyable_integrated_balance) + total_position_market_value + total_locked_balance
+        )
         total_unrealized_pnl = sum(Decimal(position.unrealized_pnl) for position in positions)
         total_pnl_percentage = (
             (total_position_market_value - total_position_price) / total_position_price * 100
@@ -110,8 +113,10 @@ class AccountSummary:
         )
         return cls(
             total_balance=str(total_balance),
+            total_integrated_balance=str(total_integrated_balance),
             locked_balance=str(total_locked_balance),
             available_balance=balance.available_balance,
+            buyable_integrated_balance=balance.buyable_integrated_balance,
             buyable_balance=balance.buyable_balance,
             exchange_rate=balance.exchange_rate,
             currency=balance.currency,
