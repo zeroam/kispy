@@ -12,6 +12,7 @@ from kispy.constants import (
     Period,
 )
 from kispy.domestic_stock import DomesticStock
+from kispy.exceptions import InvalidSymbol
 from kispy.models.account import AccountSummary, Balance, Order, PendingOrder, Position
 from kispy.models.market import OHLCV, Symbol
 from kispy.overseas_stock import OverseasStock
@@ -151,6 +152,9 @@ class KisClientV2:
             return []
 
         self.load_market_data()
+        if symbol not in self._market:
+            raise InvalidSymbol(f"Invalid symbol: {symbol}")
+
         market_symbol = self._market[symbol]
 
         exchange_code = market_symbol.exchange_code
