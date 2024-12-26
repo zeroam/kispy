@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from kispy.exceptions import KispyException
+from kispy.exceptions import KispyErrorResponse, KispyException
 
 
 class IResponse(Protocol):
@@ -44,29 +44,29 @@ class BaseResponse(IResponse):
         return False
 
     @property
-    def _return_code(self) -> str | None:
+    def _return_code(self) -> str:
         # 토큰 발급시에는 rt_cd가 없음
         if "rt_cd" in self.json:
             return self.json["rt_cd"]  # type: ignore[no-any-return]
         return "0"
 
     @property
-    def _err_code(self) -> str | None:
+    def _err_code(self) -> str:
         if "msg_cd" in self.json:
             return self.json["msg_cd"]  # type: ignore[no-any-return]
         if "error_code" in self.json:
             return self.json["error_code"]  # type: ignore[no-any-return]
-        return None
+        return "0"
 
     @property
-    def _err_message(self) -> str | None:
+    def _err_message(self) -> str:
         if "msg1" in self.json:
             return self.json["msg1"]  # type: ignore[no-any-return]
         if "error_description" in self.json:
             return self.json["error_description"]  # type: ignore[no-any-return]
-        return None
+        return ""
 
     def raise_for_status(self) -> None:
         if self.is_success():
             return
-        raise KispyException(f"{self._err_code}({self.status_code}): {self._err_message}")
+        raise KispyErrorResponse(self._err_code, self._err_message)
