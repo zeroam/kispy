@@ -1,11 +1,17 @@
+import logging
+import time
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from kispy.auth import KisAuth
 from kispy.constants import REAL_URL, VIRTUAL_URL
+from kispy.err_codes import ErrorCode
 from kispy.rate_limit import RateLimiter
 from kispy.responses import BaseResponse
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAPI:
@@ -31,8 +37,13 @@ class BaseAPI:
 
     def _request(self, method: str, url: str, **kwargs) -> BaseResponse:
         """공통 request 메서드"""
-        RateLimiter().wait_if_needed()
-        resp = self._session.request(method, url, **kwargs)
-        custom_resp = BaseResponse(headers=dict(resp.headers), status_code=resp.status_code, json=resp.json())
-        custom_resp.raise_for_status()
-        return custom_resp
+        while True:
+            RateLimiter().wait_if_needed()
+            resp = self._session.request(method, url, **kwargs)
+            custom_resp = BaseResponse(headers=dict(resp.headers), status_code=resp.status_code, json=resp.json())
+            if custom_resp.err_code == ErrorCode.TOO_MANY_REQUESTS:
+                logger.warning("API 호출 횟수를 초과하였습니다.")
+                time.sleep(0.1)
+                continue
+            custom_resp.raise_for_status()
+            return custom_resp

@@ -51,7 +51,7 @@ class BaseResponse(IResponse):
         return "0"
 
     @property
-    def _err_code(self) -> str:
+    def err_code(self) -> str:
         if "msg_cd" in self.json:
             return self.json["msg_cd"]  # type: ignore[no-any-return]
         if "error_code" in self.json:
@@ -69,4 +69,4 @@ class BaseResponse(IResponse):
     def raise_for_status(self) -> None:
         if self.is_success():
             return
-        raise KispyErrorResponse(self._err_code, self._err_message)
+        raise KispyErrorResponse(self.err_code, self._err_message)
