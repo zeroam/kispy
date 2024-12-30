@@ -188,27 +188,28 @@ class QuoteAPI(BaseAPI):
         zone_info = TimeZoneMap[exchange_code]
         now = datetime.now(tz=zone_info)
         parsed_start_date = self._parse_date(start_date, zone_info) if start_date else None
-        parsed_end_date = self._parse_date(end_date, zone_info) if end_date else now
+        parsed_end_date = self._parse_date(end_date, zone_info) if end_date else None
 
         # 먼저 최신 데이터를 한 번 조회하여 마지막 거래 시점 확인
-        temp_records = self._request(
-            method="get",
-            url=url,
-            headers=headers,
-            params={
-                "AUTH": "",
-                "EXCD": exchange_code,
-                "SYMB": symbol,
-                "NMIN": period,
-                "PINC": "1",
-                "NEXT": "",
-                "NREC": "1",
-                "FILL": "",
-                "KEYB": "",
-            },
-        ).json["output2"]
+        temp_records = []
+        if parsed_end_date:
+            temp_records = self._request(
+                method="get",
+                url=url,
+                headers=headers,
+                params={
+                    "AUTH": "",
+                    "EXCD": exchange_code,
+                    "SYMB": symbol,
+                    "NMIN": period,
+                    "PINC": "1",
+                    "NEXT": "",
+                    "NREC": "1",
+                    "FILL": "",
+                    "KEYB": "",
+                },
+            ).json["output2"]
 
-        if temp_records:
             latest_record = temp_records[0]
             latest_time = self._parse_date(latest_record["xymd"] + latest_record["xhms"], zone_info)
             if parsed_end_date >= latest_time:
@@ -219,7 +220,7 @@ class QuoteAPI(BaseAPI):
                 keyb = parsed_end_date.strftime("%Y%m%d%H%M%S")
         else:
             next_value = "1"
-            keyb = parsed_end_date.strftime("%Y%m%d%H%M%S")
+            keyb = now.strftime("%Y%m%d%H%M%S")
 
         result: list[dict] = []
         while limit is None or len(result) < limit:

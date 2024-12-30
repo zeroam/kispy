@@ -56,3 +56,9 @@ def test_fetch_ohlcv_various_minute_period(
         period=period,
     )
     assert len(resp) == expected_length
+
+
+def test_fetch_ohlcv_by_minute_with_limit(auth: KisAuth):
+    client = KisClientV2(auth, "US")
+    resp = client.fetch_ohlcv("AAPL", None, None, "1m", limit=240)
+    assert len(resp) == 240
