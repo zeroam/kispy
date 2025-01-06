@@ -88,6 +88,52 @@ class QuoteAPI(BaseAPI):
             cur_end_date = datetime.strptime(items[-1]["stck_bsop_date"], "%Y%m%d") - timedelta(days=1)
 
         return result
+    
+    def get_stock_price_history_by_minute(
+        self,
+        stock_code: str,
+        time: str | None = None,  # HHMMSS format
+        include_hour: bool = False,  # 시간외 거래 포함 여부
+    ) -> list[dict]:
+        """주식당일분봉조회[v1_국내주식-022]
+        당일 분봉 데이터만 제공됩니다. (전일자 분봉 미제공)
+
+        Args:
+            stock_code (str): 종목코드
+            time (str | None): 조회 시작시간 (HHMMSS 형식, 예: "123000"은 12시 30분부터 조회) None인 경우 현재시각부터 조회
+            include_hour (bool): 시간외단일가여부 (True: 시간외단일가 포함, False: 미포함)
+
+        Returns:
+            list[dict]: 주식 분봉 시세 (최대 30건)
+            
+        Note:
+            - time에 미래 시각을 입력하면 현재 시각 기준으로 조회됩니다.
+            - output2의 첫번째 배열의 체결량(cntg_vol)은 첫체결이 발생되기 전까지는 이전 분봉의 체결량이 표시됩니다.
+        """
+        path = "uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice"
+        url = f"{self._url}/{path}"
+
+        headers = self._auth.get_header()
+        headers["tr_id"] = "FHKST03010200"
+
+        # 현재 시각이 없으면 현재 시각으로 설정
+        if not time:
+            time = datetime.now().strftime("%H%M%S")
+
+        resp = self._request(
+            "GET",
+            url,
+            headers=headers,
+            params={
+                "FID_COND_MRKT_DIV_CODE": "J",
+                "FID_INPUT_ISCD": stock_code,
+                "FID_INPUT_HOUR_1": time,
+                "FID_PW_DATA_INCU_YN": "Y" if include_hour else "N",
+                "FID_ETC_CLS_CODE": "",
+            },
+        )
+        return list(resp.json["output2"])
+
 
     def _parse_date(self, date_str: str) -> datetime:
         return datetime.strptime(date_str, "%Y-%m-%d")
