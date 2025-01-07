@@ -269,10 +269,3 @@ class QuoteAPI(BaseAPI):
         last_time = datetime.strptime(last_time_str, "%Y%m%d%H%M%S")
         next_time = last_time - timedelta(minutes=int(period))
         return next_time.strftime("%Y%m%d%H%M%S")
-
-    def _parse_date(self, date_str: str, zone_info: ZoneInfo) -> datetime:
-        date_str = date_str.replace("-", "")
-        try:
-            return datetime.strptime(date_str, "%Y%m%d").replace(tzinfo=zone_info)
-        except ValueError:
-            return datetime.strptime(date_str, "%Y%m%d%H%M%S").replace(tzinfo=zone_info)

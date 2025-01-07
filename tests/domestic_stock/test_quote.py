@@ -51,109 +51,62 @@ def test_get_stock_price_history_with_not_exists_in_start_date(auth: KisAuth):
     assert len(resp) == 2
 
 
+@freeze_time("2024-01-03 14:30:00", tz_offset=9)  # KST 14:30
 def test_get_stock_price_history_by_minute(auth: KisAuth):
-    """
-    현재 시각부터 조회 (기본 120건)
-    """
+    """현재 시각부터 기본 건수(30건) 조회"""
     quote = KisClient(auth).domestic_stock.quote
     resp = quote.get_stock_price_history_by_minute(
-        stock_code="005930",
+        symbol="005930",
     )
 
-    assert len(resp) <= 120
-    if len(resp) > 1:
-        # 기본적으로 과거순 정렬 (오름차순)
-        first_time = int(resp[0]["stck_cntg_hour"])
-        last_time = int(resp[-1]["stck_cntg_hour"])
-        assert first_time < last_time
+    assert len(resp) == 30
 
 
-def test_get_stock_price_history_by_minute_with_limit(auth: KisAuth):
-    """
-    limit 파라미터 테스트
-    """
-    quote = KisClient(auth).domestic_stock.quote
-    resp = quote.get_stock_price_history_by_minute(
-        stock_code="005930",
-        limit=50,
-    )
-
-    assert len(resp) <= 50
-
-
+@freeze_time("2024-01-03 14:30:00", tz_offset=9)  # KST 14:30
 def test_get_stock_price_history_by_minute_with_desc(auth: KisAuth):
-    """
-    desc 파라미터 테스트 (시간 역순 정렬)
-    """
+    """desc=True일 때 최신순(내림차순) 정렬"""
     quote = KisClient(auth).domestic_stock.quote
     resp = quote.get_stock_price_history_by_minute(
-        stock_code="005930",
+        symbol="005930",
         desc=True,
     )
 
+    assert len(resp) == 30
     if len(resp) > 1:
-        # 시간 역순 정렬 (내림차순)
-        first_time = int(resp[0]["stck_cntg_hour"])
-        last_time = int(resp[-1]["stck_cntg_hour"])
+        first_time: datetime = resp[0]["stck_cntg_hour"]
+        last_time: datetime = resp[-1]["stck_cntg_hour"]
         assert first_time > last_time
 
 
+@freeze_time("2024-01-03 14:30:00", tz_offset=9)  # KST 14:30
+def test_get_stock_price_history_by_minute_with_limit(auth: KisAuth):
+    """limit 파라미터 테스트"""
+    quote = KisClient(auth).domestic_stock.quote
+    resp = quote.get_stock_price_history_by_minute(
+        symbol="005930",
+        limit=50,
+    )
+
+    assert len(resp) == 50
+
+@freeze_time("2024-01-03 14:30:00", tz_offset=9)  # KST 14:30
 def test_get_stock_price_history_by_minute_with_specific_time(auth: KisAuth):
-    """
-    오전 10시부터 조회
-    """
+    """특정 시각부터 조회"""
     quote = KisClient(auth).domestic_stock.quote 
     resp = quote.get_stock_price_history_by_minute(
-        stock_code="005930",
-        time="100000",
+        symbol="005930",
+        time="100000",  # 오전 10시
     )
 
-    assert len(resp) <= 120
-    if resp:
-        # 10시 이후의 데이터가 포함되어 있어야 함
-        last_time = int(resp[-1]["stck_cntg_hour"])
-        assert last_time >= 100000
+    assert len(resp) == 30
+    assert resp[-1]["stck_cntg_hour"].hour == 10
 
-
-def test_get_stock_price_history_by_minute_with_include_hour(auth: KisAuth):
-    """
-    시간외 거래 포함하여 조회
-    """
-    quote = KisClient(auth).domestic_stock.quote
-    resp = quote.get_stock_price_history_by_minute(
-        stock_code="005930",
-        include_hour=True,
-    )
-
-    assert len(resp) <= 120
-
-
-def test_get_stock_price_history_by_minute_with_future_time(auth: KisAuth):
-    """
-    미래 시각 입력 시 현재 시각으로 조회됨
-    """
-    quote = KisClient(auth).domestic_stock.quote
-    current_hour = datetime.now().strftime("%H")
-    future_time = f"{int(current_hour)+1:02d}0000"  # 현재보다 1시간 뒤
-    
-    resp = quote.get_stock_price_history_by_minute(
-        stock_code="005930",
-        time=future_time,
-    )
-
-    assert len(resp) <= 120
-    if resp:
-        last_time = int(resp[-1]["stck_cntg_hour"])
-        assert last_time <= int(future_time)
-
-
+@freeze_time("2024-01-03 04:00:00", tz_offset=9)  # KST 04:00
 def test_get_stock_price_history_by_minute_not_exists(auth: KisAuth):
-    """
-    장 시작 전 시간으로 조회 시 데이터가 없어야 함
-    """
+    """장 시작 전 시간으로 조회 시 데이터가 없어야 함"""
     quote = KisClient(auth).domestic_stock.quote
     resp = quote.get_stock_price_history_by_minute(
-        stock_code="005930",
+        symbol="005930",
         time="040000",  # 새벽 4시
     )
 

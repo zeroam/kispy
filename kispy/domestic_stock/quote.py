@@ -9,8 +9,8 @@ from kispy.base import BaseAPI
 
 class QuoteAPI(BaseAPI):
     def get_price(self, symbol: str) -> float:
-        """
-        주식 현재가 시세 API입니다. 실시간 시세를 원하신다면 웹소켓 API를 활용하세요.
+        """주식 현재가 시세 API[v1_국내주식-008]
+        입니다. 실시간 시세를 원하신다면 웹소켓 API를 활용하세요.
 
         Args:
             symbol (str): 종목코드
@@ -91,29 +91,30 @@ class QuoteAPI(BaseAPI):
     
     def get_stock_price_history_by_minute(
         self,
-        stock_code: str,
+        symbol: str,
         time: str | None = None,
-        include_hour: bool = False,
-        limit: int | None = 120,
+        limit: int | None = 30,
         desc: bool = False,
     ) -> list[dict]:
         """주식당일분봉조회[v1_국내주식-022]
         당일 분봉 데이터만 제공됩니다. (전일자 분봉 미제공)
 
         Args:
-            stock_code (str): 종목코드
+            symbol (str): 종목코드
             time (str | None): 조회 시작시간 (HHMMSS 형식, 예: "123000"은 12시 30분부터 조회) None인 경우 현재시각부터 조회
-            include_hour (bool): 시간외단일가여부 (True: 시간외단일가 포함, False: 미포함)
-            limit (int | None): 조회 건수 제한, None인 경우 가능한 모든 데이터 조회
-            desc (bool): 시간 역순 정렬 여부, 기본값은 False
+            limit (int): 조회 건수, 기본값 30건
+            desc (bool): 시간 역순 정렬 여부, 기본값은 False (False: 과거순 정렬, True: 최신순 정렬)
 
         Returns:
             list[dict]: 주식 분봉 시세
-            
+
         Note:
             - time에 미래 시각을 입력하면 현재 시각 기준으로 조회됩니다.
             - output2의 첫번째 배열의 체결량(cntg_vol)은 첫체결이 발생되기 전까지는 이전 분봉의 체결량이 표시됩니다.
-            - 한 번의 API 호출로 최대 120건의 데이터를 가져올 수 있으며, 여러 번 호출하여 더 많은 데이터를 가져올 수 있습니다.
+            - 한 번의 API 호출로 최대 30건의 데이터를 가져올 수 있으며, 여러 번 호출하여 더 많은 데이터를 가져올 수 있습니다.
+            - 개선 가능 사항 : 
+                - ETF, ETN의 분봉 데이터를 사용하여 국내 지수 분봉 데이터 추가 조회 가능
+                - 섹터/업종별 지수 추가 조회 가능
         """
         path = "uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice"
         url = f"{self._url}/{path}"
@@ -126,40 +127,48 @@ class QuoteAPI(BaseAPI):
 
         result: list[dict] = []
         current_time = time
+        today = datetime.now().strftime("%Y%m%d")
 
         while limit is None or len(result) < limit:
-            resp = self._request(
-                "GET",
-                url,
-                headers=headers,
-                params={
-                    "FID_COND_MRKT_DIV_CODE": "J",
-                    "FID_INPUT_ISCD": stock_code,
-                    "FID_INPUT_HOUR_1": current_time,
-                    "FID_PW_DATA_INCU_YN": "Y" if include_hour else "N",
-                    "FID_ETC_CLS_CODE": "",
-                },
-            )
+            params={
+                "FID_COND_MRKT_DIV_CODE": "J", # 시장 분류 코드 (J : 주식)
+                "FID_INPUT_ISCD": symbol, # 종목코드
+                "FID_INPUT_HOUR_1": current_time, # 조회 시작 시간
+                "FID_ETC_CLS_CODE": "", # 종목 분류 코드 (기본값: 빈 문자열)
+                "FID_PW_DATA_INCU_YN": "N", # 데이터 포함 여부 (기본값: "N")
+            }
+
+            resp = self._request(method="get", url=url, headers=headers, params=params)
 
             records = list(resp.json["output2"])
             if not records:
                 break
 
+            for record in records:
+                record["stck_cntg_hour"] = self._parse_date(f"{today}{record['stck_cntg_hour']}")
+
+            if limit is not None:
+                remaining = limit - len(result)
+                records = records[:remaining]
+
             result.extend(records)
-            
+
+            if limit is not None and len(result) >= limit:
+                break
+
             last_record = records[-1]
             if "stck_cntg_hour" not in last_record:
                 break
-                
-            current_time = last_record["stck_cntg_hour"]
-            if limit and len(result) >= limit:
-                result = result[:limit]
-                break
+
+            current_time = self._get_next_keyb_minute(records)
 
         if not desc:
             result.reverse()
+
         return result
 
-
-    def _parse_date(self, date_str: str) -> datetime:
-        return datetime.strptime(date_str, "%Y-%m-%d")
+    def _get_next_keyb_minute(self, records: list[dict], period: int = 1) -> str:
+        last_record = records[-1]
+        last_time: datetime = last_record["stck_cntg_hour"]
+        next_time = last_time - timedelta(minutes=period)
+        return next_time.strftime("%H%M%S")
