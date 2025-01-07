@@ -53,15 +53,49 @@ def test_get_stock_price_history_with_not_exists_in_start_date(auth: KisAuth):
 
 def test_get_stock_price_history_by_minute(auth: KisAuth):
     """
-    현재 시각부터 조회
+    현재 시각부터 조회 (기본 120건)
     """
     quote = KisClient(auth).domestic_stock.quote
     resp = quote.get_stock_price_history_by_minute(
         stock_code="005930",
     )
 
-    # API는 최대 30건까지만 제공
-    assert len(resp) <= 30
+    assert len(resp) <= 120
+    if len(resp) > 1:
+        # 기본적으로 과거순 정렬 (오름차순)
+        first_time = int(resp[0]["stck_cntg_hour"])
+        last_time = int(resp[-1]["stck_cntg_hour"])
+        assert first_time < last_time
+
+
+def test_get_stock_price_history_by_minute_with_limit(auth: KisAuth):
+    """
+    limit 파라미터 테스트
+    """
+    quote = KisClient(auth).domestic_stock.quote
+    resp = quote.get_stock_price_history_by_minute(
+        stock_code="005930",
+        limit=50,
+    )
+
+    assert len(resp) <= 50
+
+
+def test_get_stock_price_history_by_minute_with_desc(auth: KisAuth):
+    """
+    desc 파라미터 테스트 (시간 역순 정렬)
+    """
+    quote = KisClient(auth).domestic_stock.quote
+    resp = quote.get_stock_price_history_by_minute(
+        stock_code="005930",
+        desc=True,
+    )
+
+    if len(resp) > 1:
+        # 시간 역순 정렬 (내림차순)
+        first_time = int(resp[0]["stck_cntg_hour"])
+        last_time = int(resp[-1]["stck_cntg_hour"])
+        assert first_time > last_time
 
 
 def test_get_stock_price_history_by_minute_with_specific_time(auth: KisAuth):
@@ -74,11 +108,11 @@ def test_get_stock_price_history_by_minute_with_specific_time(auth: KisAuth):
         time="100000",
     )
 
-    assert len(resp) <= 30
+    assert len(resp) <= 120
     if resp:
-        # 10시 이후의 데이터만 있어야 함
-        first_time = int(resp[0]["stck_cntg_hour"])
-        assert first_time >= 100000
+        # 10시 이후의 데이터가 포함되어 있어야 함
+        last_time = int(resp[-1]["stck_cntg_hour"])
+        assert last_time >= 100000
 
 
 def test_get_stock_price_history_by_minute_with_include_hour(auth: KisAuth):
@@ -91,7 +125,7 @@ def test_get_stock_price_history_by_minute_with_include_hour(auth: KisAuth):
         include_hour=True,
     )
 
-    assert len(resp) <= 30
+    assert len(resp) <= 120
 
 
 def test_get_stock_price_history_by_minute_with_future_time(auth: KisAuth):
@@ -107,10 +141,10 @@ def test_get_stock_price_history_by_minute_with_future_time(auth: KisAuth):
         time=future_time,
     )
 
-    assert len(resp) <= 30
+    assert len(resp) <= 120
     if resp:
-        first_time = int(resp[0]["stck_cntg_hour"])
-        assert first_time <= int(future_time)
+        last_time = int(resp[-1]["stck_cntg_hour"])
+        assert last_time <= int(future_time)
 
 
 def test_get_stock_price_history_by_minute_not_exists(auth: KisAuth):

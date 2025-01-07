@@ -92,8 +92,10 @@ class QuoteAPI(BaseAPI):
     def get_stock_price_history_by_minute(
         self,
         stock_code: str,
-        time: str | None = None,  # HHMMSS format
-        include_hour: bool = False,  # 시간외 거래 포함 여부
+        time: str | None = None,
+        include_hour: bool = False,
+        limit: int | None = 120,
+        desc: bool = False,
     ) -> list[dict]:
         """주식당일분봉조회[v1_국내주식-022]
         당일 분봉 데이터만 제공됩니다. (전일자 분봉 미제공)
@@ -102,13 +104,16 @@ class QuoteAPI(BaseAPI):
             stock_code (str): 종목코드
             time (str | None): 조회 시작시간 (HHMMSS 형식, 예: "123000"은 12시 30분부터 조회) None인 경우 현재시각부터 조회
             include_hour (bool): 시간외단일가여부 (True: 시간외단일가 포함, False: 미포함)
+            limit (int | None): 조회 건수 제한, None인 경우 가능한 모든 데이터 조회
+            desc (bool): 시간 역순 정렬 여부, 기본값은 False
 
         Returns:
-            list[dict]: 주식 분봉 시세 (최대 30건)
+            list[dict]: 주식 분봉 시세
             
         Note:
             - time에 미래 시각을 입력하면 현재 시각 기준으로 조회됩니다.
             - output2의 첫번째 배열의 체결량(cntg_vol)은 첫체결이 발생되기 전까지는 이전 분봉의 체결량이 표시됩니다.
+            - 한 번의 API 호출로 최대 120건의 데이터를 가져올 수 있으며, 여러 번 호출하여 더 많은 데이터를 가져올 수 있습니다.
         """
         path = "uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice"
         url = f"{self._url}/{path}"
@@ -116,23 +121,44 @@ class QuoteAPI(BaseAPI):
         headers = self._auth.get_header()
         headers["tr_id"] = "FHKST03010200"
 
-        # 현재 시각이 없으면 현재 시각으로 설정
         if not time:
-            time = datetime.now().strftime("%H%M%S")
+            time = datetime.now().replace(second=0).strftime("%H%M%S")
 
-        resp = self._request(
-            "GET",
-            url,
-            headers=headers,
-            params={
-                "FID_COND_MRKT_DIV_CODE": "J",
-                "FID_INPUT_ISCD": stock_code,
-                "FID_INPUT_HOUR_1": time,
-                "FID_PW_DATA_INCU_YN": "Y" if include_hour else "N",
-                "FID_ETC_CLS_CODE": "",
-            },
-        )
-        return list(resp.json["output2"])
+        result: list[dict] = []
+        current_time = time
+
+        while limit is None or len(result) < limit:
+            resp = self._request(
+                "GET",
+                url,
+                headers=headers,
+                params={
+                    "FID_COND_MRKT_DIV_CODE": "J",
+                    "FID_INPUT_ISCD": stock_code,
+                    "FID_INPUT_HOUR_1": current_time,
+                    "FID_PW_DATA_INCU_YN": "Y" if include_hour else "N",
+                    "FID_ETC_CLS_CODE": "",
+                },
+            )
+
+            records = list(resp.json["output2"])
+            if not records:
+                break
+
+            result.extend(records)
+            
+            last_record = records[-1]
+            if "stck_cntg_hour" not in last_record:
+                break
+                
+            current_time = last_record["stck_cntg_hour"]
+            if limit and len(result) >= limit:
+                result = result[:limit]
+                break
+
+        if not desc:
+            result.reverse()
+        return result
 
 
     def _parse_date(self, date_str: str) -> datetime:
