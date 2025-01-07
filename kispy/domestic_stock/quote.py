@@ -126,8 +126,9 @@ class QuoteAPI(BaseAPI):
             time = datetime.now().replace(second=0).strftime("%H%M%S")
 
         result: list[dict] = []
-        current_time = time
-        today = datetime.now().strftime("%Y%m%d")
+        now = datetime.now()
+        today = now.strftime("%Y%m%d")
+        current_time = time if time < now.strftime("%H%M%S") else now.strftime("%H%M%S")
 
         while limit is None or len(result) < limit:
             params={

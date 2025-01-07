@@ -51,7 +51,6 @@ def test_get_stock_price_history_with_not_exists_in_start_date(auth: KisAuth):
     assert len(resp) == 2
 
 
-@freeze_time("2024-01-03 14:30:00", tz_offset=9)  # KST 14:30
 def test_get_stock_price_history_by_minute(auth: KisAuth):
     """현재 시각부터 기본 건수(30건) 조회"""
     quote = KisClient(auth).domestic_stock.quote
@@ -62,7 +61,6 @@ def test_get_stock_price_history_by_minute(auth: KisAuth):
     assert len(resp) == 30
 
 
-@freeze_time("2024-01-03 14:30:00", tz_offset=9)  # KST 14:30
 def test_get_stock_price_history_by_minute_with_desc(auth: KisAuth):
     """desc=True일 때 최신순(내림차순) 정렬"""
     quote = KisClient(auth).domestic_stock.quote
@@ -78,7 +76,6 @@ def test_get_stock_price_history_by_minute_with_desc(auth: KisAuth):
         assert first_time > last_time
 
 
-@freeze_time("2024-01-03 14:30:00", tz_offset=9)  # KST 14:30
 def test_get_stock_price_history_by_minute_with_limit(auth: KisAuth):
     """limit 파라미터 테스트"""
     quote = KisClient(auth).domestic_stock.quote
@@ -89,7 +86,6 @@ def test_get_stock_price_history_by_minute_with_limit(auth: KisAuth):
 
     assert len(resp) == 50
 
-@freeze_time("2024-01-03 14:30:00", tz_offset=9)  # KST 14:30
 def test_get_stock_price_history_by_minute_with_specific_time(auth: KisAuth):
     """특정 시각부터 조회"""
     quote = KisClient(auth).domestic_stock.quote 
@@ -101,7 +97,19 @@ def test_get_stock_price_history_by_minute_with_specific_time(auth: KisAuth):
     assert len(resp) == 30
     assert resp[-1]["stck_cntg_hour"].hour == 10
 
-@freeze_time("2024-01-03 04:00:00", tz_offset=9)  # KST 04:00
+def test_get_stock_price_history_by_minute_with_future_time(auth: KisAuth):
+    """미래 시간으로 조회시 현재 시간으로 조회"""
+    quote = KisClient(auth).domestic_stock.quote
+    now = datetime.now()
+    future = (now + timedelta(hours=1)).strftime("%H%M%S")
+    resp = quote.get_stock_price_history_by_minute(
+        symbol="005930",
+        time=future,
+    )
+
+    assert len(resp) == 30
+    assert resp[-1]["stck_cntg_hour"].hour == now.hour
+
 def test_get_stock_price_history_by_minute_not_exists(auth: KisAuth):
     """장 시작 전 시간으로 조회 시 데이터가 없어야 함"""
     quote = KisClient(auth).domestic_stock.quote
