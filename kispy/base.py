@@ -1,5 +1,7 @@
+from datetime import datetime
 import logging
 import time
+from zoneinfo import ZoneInfo
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -47,3 +49,13 @@ class BaseAPI:
                 continue
             custom_resp.raise_for_status()
             return custom_resp
+        
+    def _parse_date(self, date_str: str, zone_info: ZoneInfo | None = None) -> datetime:
+        date_str = date_str.replace("-", "")
+        try : 
+            result = datetime.strptime(date_str, "%Y%m%d")
+        except ValueError:
+            result = datetime.strptime(date_str, "%Y%m%d%H%M%S")
+        if zone_info:
+            result = result.replace(tzinfo=zone_info)
+        return result
