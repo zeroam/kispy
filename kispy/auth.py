@@ -39,6 +39,7 @@ class KisAuth:
         self.app_key = app_key
         self.app_secret = secret
         self.is_real = is_real
+        self.account_no = account_no
         self.cano, self.acnt_prdt_cd = account_no.split("-")
         self._token: Token | None = None
         self._file_path = os.path.join(tempfile.gettempdir(), f"kis_{self.app_key}")

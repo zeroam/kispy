@@ -51,6 +51,7 @@ class KisClient:
 
 class KisClientV2:
     def __init__(self, auth: KisAuth, nation: Nation):
+        self.account_no = auth.account_no
         self.client = KisClient(auth)
         self.nation = nation
         self._market: dict[str, Symbol] = {}
