@@ -2,9 +2,19 @@
 - 기본적인 시세 정보 조회 (현재가, 호가, 체결, 일별 시세 등)
 """
 
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from kispy.base import BaseAPI
+
+
+@dataclass(frozen=True)
+class PreparedDomesticQuoteRequest:
+    method: str
+    path: str
+    tr_id: str
+    params: dict[str, str]
+    tr_cont: str = ""
 
 
 class QuoteAPI(BaseAPI):
@@ -31,6 +41,58 @@ class QuoteAPI(BaseAPI):
 
         resp = self._request(method="get", url=url, headers=headers, params=params)
         return float(resp.json["output"]["stck_prpr"])
+
+    def prepare_overtime_asking_price(
+        self,
+        stock_code: str,
+        market_division: str = "J",
+    ) -> PreparedDomesticQuoteRequest:
+        return PreparedDomesticQuoteRequest(
+            method="get",
+            path="uapi/domestic-stock/v1/quotations/inquire-overtime-asking-price",
+            tr_id="FHPST02300400",
+            params={
+                "FID_COND_MRKT_DIV_CODE": market_division,
+                "FID_INPUT_ISCD": stock_code,
+            },
+        )
+
+    def get_overtime_asking_price(self, stock_code: str, market_division: str = "J") -> dict:
+        """국내주식 시간외호가[국내주식-077]."""
+        request = self.prepare_overtime_asking_price(stock_code=stock_code, market_division=market_division)
+        return self._send_prepared_quote_request(request)["output"]  # type: ignore[no-any-return]
+
+    def prepare_after_hour_balance(
+        self,
+        rank_sort: str = "1",
+        market_code: str = "0000",
+        tr_cont: str = "",
+    ) -> PreparedDomesticQuoteRequest:
+        return PreparedDomesticQuoteRequest(
+            method="get",
+            path="uapi/domestic-stock/v1/ranking/after-hour-balance",
+            tr_id="FHPST01760000",
+            tr_cont=tr_cont,
+            params={
+                "fid_input_price_1": "",
+                "fid_cond_mrkt_div_code": "J",
+                "fid_cond_scr_div_code": "20176",
+                "fid_rank_sort_cls_code": rank_sort,
+                "fid_div_cls_code": "0",
+                "fid_input_iscd": market_code,
+                "fid_trgt_exls_cls_code": "0",
+                "fid_trgt_cls_code": "0",
+                "fid_vol_cnt": "",
+                "fid_input_price_2": "",
+            },
+        )
+
+    def get_after_hour_balance(self, rank_sort: str = "1", market_code: str = "0000") -> list[dict]:
+        """국내주식 시간외잔량 순위[v1_국내주식-093]."""
+        request = self.prepare_after_hour_balance(rank_sort=rank_sort, market_code=market_code)
+        data = self._send_prepared_quote_request(request)
+        output = data.get("output", [])
+        return list(output) if isinstance(output, list) else [output]
 
     def get_stock_price_history(
         self,
@@ -175,3 +237,12 @@ class QuoteAPI(BaseAPI):
         last_time: datetime = last_record["stck_cntg_hour"]
         next_time = last_time - timedelta(minutes=period)
         return next_time.strftime("%H%M%S")
+
+    def _send_prepared_quote_request(self, request: PreparedDomesticQuoteRequest) -> dict:
+        url = f"{self._url}/{request.path}"
+        headers = self._auth.get_header()
+        headers["tr_id"] = request.tr_id
+        if request.tr_cont:
+            headers["tr_cont"] = request.tr_cont
+        resp = self._request(method=request.method, url=url, headers=headers, params=request.params)
+        return resp.json

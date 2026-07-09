@@ -76,6 +76,17 @@ reserved_krx_preopen_buy = client.domestic_stock.order.prepare_reservation_order
 # 로그에는 계좌번호를 가린 payload만 남기세요.
 print(krx_preopen_buy.redacted_body())
 
+# KRX/NXT 시장 데이터 no-trade dry-run
+overtime_quote = client.domestic_stock.quote.prepare_overtime_asking_price("005930")
+preopen_balance_rank = client.domestic_stock.quote.prepare_after_hour_balance()
+nxt_asking_price = client.domestic_stock.realtime.prepare_nxt_asking_price_subscription("005930")
+nxt_trade = client.domestic_stock.realtime.prepare_nxt_trade_subscription("005930")
+nxt_market_status = client.domestic_stock.realtime.prepare_nxt_market_status_subscription("005930")
+
+print(overtime_quote.params)
+print(preopen_balance_rank.params)
+print(nxt_asking_price.to_message())
+
 # 일별 시세 조회
 history = client.domestic_stock.quote.get_stock_price_history(
     stock_code="005930",
