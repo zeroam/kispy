@@ -86,9 +86,10 @@ def test_get_stock_price_history_by_minute_with_limit(auth: KisAuth):
 
     assert len(resp) == 50
 
+
 def test_get_stock_price_history_by_minute_with_specific_time(auth: KisAuth):
     """특정 시각부터 조회"""
-    quote = KisClient(auth).domestic_stock.quote 
+    quote = KisClient(auth).domestic_stock.quote
     resp = quote.get_stock_price_history_by_minute(
         symbol="005930",
         time="100000",  # 오전 10시
@@ -96,6 +97,7 @@ def test_get_stock_price_history_by_minute_with_specific_time(auth: KisAuth):
 
     assert len(resp) == 30
     assert resp[-1]["stck_cntg_hour"].hour == 10
+
 
 def test_get_stock_price_history_by_minute_with_future_time(auth: KisAuth):
     """미래 시간으로 조회시 현재 시간으로 조회"""
@@ -109,6 +111,7 @@ def test_get_stock_price_history_by_minute_with_future_time(auth: KisAuth):
 
     assert len(resp) == 30
     assert resp[-1]["stck_cntg_hour"].hour == now.hour
+
 
 def test_get_stock_price_history_by_minute_not_exists(auth: KisAuth):
     """장 시작 전 시간으로 조회 시 데이터가 없어야 함"""

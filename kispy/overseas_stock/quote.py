@@ -4,8 +4,6 @@
 
 from datetime import datetime, timedelta
 
-from zoneinfo import ZoneInfo
-
 from kispy.base import BaseAPI
 from kispy.constants import ExchangeCode, TimeZoneMap
 
