@@ -88,7 +88,7 @@ class QuoteAPI(BaseAPI):
             cur_end_date = datetime.strptime(items[-1]["stck_bsop_date"], "%Y%m%d") - timedelta(days=1)
 
         return result
-    
+
     def get_stock_price_history_by_minute(
         self,
         symbol: str,
@@ -101,7 +101,8 @@ class QuoteAPI(BaseAPI):
 
         Args:
             symbol (str): 종목코드
-            time (str | None): 조회 시작시간 (HHMMSS 형식, 예: "123000"은 12시 30분부터 조회) None인 경우 현재시각부터 조회
+            time (str | None): 조회 시작시간 (HHMMSS 형식, 예: "123000"은 12시 30분부터 조회)
+                None인 경우 현재시각부터 조회
             limit (int): 조회 건수, 기본값 30건
             desc (bool): 시간 역순 정렬 여부, 기본값은 False (False: 과거순 정렬, True: 최신순 정렬)
 
@@ -111,8 +112,9 @@ class QuoteAPI(BaseAPI):
         Note:
             - time에 미래 시각을 입력하면 현재 시각 기준으로 조회됩니다.
             - output2의 첫번째 배열의 체결량(cntg_vol)은 첫체결이 발생되기 전까지는 이전 분봉의 체결량이 표시됩니다.
-            - 한 번의 API 호출로 최대 30건의 데이터를 가져올 수 있으며, 여러 번 호출하여 더 많은 데이터를 가져올 수 있습니다.
-            - 개선 가능 사항 : 
+            - 한 번의 API 호출로 최대 30건의 데이터를 가져올 수 있으며,
+              여러 번 호출하여 더 많은 데이터를 가져올 수 있습니다.
+            - 개선 가능 사항 :
                 - ETF, ETN의 분봉 데이터를 사용하여 국내 지수 분봉 데이터 추가 조회 가능
                 - 섹터/업종별 지수 추가 조회 가능
         """
@@ -131,12 +133,12 @@ class QuoteAPI(BaseAPI):
         current_time = time if time < now.strftime("%H%M%S") else now.strftime("%H%M%S")
 
         while limit is None or len(result) < limit:
-            params={
-                "FID_COND_MRKT_DIV_CODE": "J", # 시장 분류 코드 (J : 주식)
-                "FID_INPUT_ISCD": symbol, # 종목코드
-                "FID_INPUT_HOUR_1": current_time, # 조회 시작 시간
-                "FID_ETC_CLS_CODE": "", # 종목 분류 코드 (기본값: 빈 문자열)
-                "FID_PW_DATA_INCU_YN": "N", # 데이터 포함 여부 (기본값: "N")
+            params = {
+                "FID_COND_MRKT_DIV_CODE": "J",  # 시장 분류 코드 (J : 주식)
+                "FID_INPUT_ISCD": symbol,  # 종목코드
+                "FID_INPUT_HOUR_1": current_time,  # 조회 시작 시간
+                "FID_ETC_CLS_CODE": "",  # 종목 분류 코드 (기본값: 빈 문자열)
+                "FID_PW_DATA_INCU_YN": "N",  # 데이터 포함 여부 (기본값: "N")
             }
 
             resp = self._request(method="get", url=url, headers=headers, params=params)

@@ -1,11 +1,11 @@
-from datetime import datetime
 import logging
 import time
-from zoneinfo import ZoneInfo
+from datetime import datetime
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from zoneinfo import ZoneInfo
 
 from kispy.auth import KisAuth
 from kispy.constants import REAL_URL, VIRTUAL_URL
@@ -49,10 +49,10 @@ class BaseAPI:
                 continue
             custom_resp.raise_for_status()
             return custom_resp
-        
+
     def _parse_date(self, date_str: str, zone_info: ZoneInfo | None = None) -> datetime:
         date_str = date_str.replace("-", "")
-        try : 
+        try:
             result = datetime.strptime(date_str, "%Y%m%d")
         except ValueError:
             result = datetime.strptime(date_str, "%Y%m%d%H%M%S")

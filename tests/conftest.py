@@ -11,4 +11,6 @@ def auth():
     secret = os.getenv("KISPY_APP_SECRET")
     account_no = os.getenv("KISPY_ACCOUNT_NO")
     assert app_key and secret and account_no, "KISPY_APP_KEY, KISPY_APP_SECRET, KISPY_ACCOUNT_NO must be set"
+    if app_key == "test" or secret == "test" or account_no == "test-01":
+        pytest.skip("KIS integration credentials are not configured")
     return KisAuth(app_key=app_key, secret=secret, account_no=account_no, is_real=True)
