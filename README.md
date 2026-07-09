@@ -79,13 +79,25 @@ print(krx_preopen_buy.redacted_body())
 # KRX/NXT 시장 데이터 no-trade dry-run
 overtime_quote = client.domestic_stock.quote.prepare_overtime_asking_price("005930")
 preopen_balance_rank = client.domestic_stock.quote.prepare_after_hour_balance()
+overtime_conclusion = client.domestic_stock.quote.prepare_time_overtime_conclusion("005930")
 nxt_asking_price = client.domestic_stock.realtime.prepare_nxt_asking_price_subscription("005930")
 nxt_trade = client.domestic_stock.realtime.prepare_nxt_trade_subscription("005930")
 nxt_market_status = client.domestic_stock.realtime.prepare_nxt_market_status_subscription("005930")
 
 print(overtime_quote.params)
 print(preopen_balance_rank.params)
+print(overtime_conclusion.params)
 print(nxt_asking_price.to_message())
+
+# KRX/NXT no-trade probe plan JSONL
+from kispy.domestic_stock.probe import write_krx_nxt_no_trade_probe_plan
+
+write_krx_nxt_no_trade_probe_plan(
+    log_path="logs/krx_nxt_no_trade_probe.jsonl",
+    quote_api=client.domestic_stock.quote,
+    realtime_api=client.domestic_stock.realtime,
+    stock_code="005930",
+)
 
 # 일별 시세 조회
 history = client.domestic_stock.quote.get_stock_price_history(

@@ -94,6 +94,37 @@ class QuoteAPI(BaseAPI):
         output = data.get("output", [])
         return list(output) if isinstance(output, list) else [output]
 
+    def prepare_time_overtime_conclusion(
+        self,
+        stock_code: str,
+        hour_class: str = "1",
+        market_division: str = "J",
+    ) -> PreparedDomesticQuoteRequest:
+        return PreparedDomesticQuoteRequest(
+            method="get",
+            path="uapi/domestic-stock/v1/quotations/inquire-time-overtimeconclusion",
+            tr_id="FHPST02310000",
+            params={
+                "FID_COND_MRKT_DIV_CODE": market_division,
+                "FID_INPUT_ISCD": stock_code,
+                "FID_HOUR_CLS_CODE": hour_class,
+            },
+        )
+
+    def get_time_overtime_conclusion(
+        self,
+        stock_code: str,
+        hour_class: str = "1",
+        market_division: str = "J",
+    ) -> dict:
+        """주식현재가 시간외시간별체결[v1_국내주식-025]."""
+        request = self.prepare_time_overtime_conclusion(
+            stock_code=stock_code,
+            hour_class=hour_class,
+            market_division=market_division,
+        )
+        return self._send_prepared_quote_request(request)
+
     def get_stock_price_history(
         self,
         stock_code: str,

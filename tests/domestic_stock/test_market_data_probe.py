@@ -79,6 +79,45 @@ def test_get_after_hour_balance_sends_preopen_rank_request(monkeypatch):
     assert captured["params"]["fid_rank_sort_cls_code"] == "1"
 
 
+def test_prepare_time_overtime_conclusion_request_matches_official_sample():
+    request = make_quote_api().prepare_time_overtime_conclusion("005930")
+
+    assert request.method == "get"
+    assert request.path == "uapi/domestic-stock/v1/quotations/inquire-time-overtimeconclusion"
+    assert request.tr_id == "FHPST02310000"
+    assert request.params == {
+        "FID_COND_MRKT_DIV_CODE": "J",
+        "FID_INPUT_ISCD": "005930",
+        "FID_HOUR_CLS_CODE": "1",
+    }
+
+
+def test_get_time_overtime_conclusion_preserves_summary_and_rows(monkeypatch):
+    api = make_quote_api()
+    captured = {}
+
+    def fake_request(**kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(
+            json={
+                "output1": {"stck_shrn_iscd": "005930"},
+                "output2": [{"stck_cntg_hour": "083000", "stck_prpr": "73000"}],
+            }
+        )
+
+    monkeypatch.setattr(api, "_request", fake_request)
+
+    response = api.get_time_overtime_conclusion("005930")
+
+    assert response == {
+        "output1": {"stck_shrn_iscd": "005930"},
+        "output2": [{"stck_cntg_hour": "083000", "stck_prpr": "73000"}],
+    }
+    assert captured["method"] == "get"
+    assert captured["headers"]["tr_id"] == "FHPST02310000"
+    assert captured["params"]["FID_HOUR_CLS_CODE"] == "1"
+
+
 def test_prepare_nxt_asking_price_subscription_message_matches_official_shape():
     subscription = RealtimeAPI().prepare_nxt_asking_price_subscription("005930")
 
