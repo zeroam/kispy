@@ -15,6 +15,7 @@ from kispy.domestic_stock import DomesticStock
 from kispy.exceptions import InvalidSymbol
 from kispy.models.account import AccountSummary, Balance, Order, PendingOrder, Position
 from kispy.models.market import OHLCV, Symbol
+from kispy.overseas_futures import OverseasFutures
 from kispy.overseas_stock import OverseasStock
 from kispy.utils import get_symbol_map
 
@@ -46,6 +47,7 @@ class KisClient:
         self._url = REAL_URL if auth.is_real else VIRTUAL_URL
         self._auth = auth
         self.domestic_stock = DomesticStock(auth=self._auth)
+        self.overseas_futures = OverseasFutures(auth=self._auth)
         self.overseas_stock = OverseasStock(auth=self._auth)
 
 
