@@ -47,6 +47,35 @@ result = client.domestic_stock.order.buy(
     price=70000,  # 주문가격
 )
 
+# KRX/NXT 주문 payload dry-run
+krx_preopen_buy = client.domestic_stock.order.prepare_cash_order(
+    stock_code="005930",
+    side="buy",
+    quantity=1,
+    price=0,
+    exchange="KRX",
+    order_type="05",  # 장전 시간외
+)
+
+nxt_sell = client.domestic_stock.order.prepare_cash_order(
+    stock_code="005930",
+    side="sell",
+    quantity=1,
+    price=73000,
+    exchange="NXT",
+)
+
+reserved_krx_preopen_buy = client.domestic_stock.order.prepare_reservation_order(
+    stock_code="005930",
+    side="buy",
+    quantity=1,
+    price=0,
+    order_type="05",  # 장전 시간외
+)
+
+# 로그에는 계좌번호를 가린 payload만 남기세요.
+print(krx_preopen_buy.redacted_body())
+
 # 일별 시세 조회
 history = client.domestic_stock.quote.get_stock_price_history(
     stock_code="005930",
