@@ -89,16 +89,6 @@ print(preopen_balance_rank.params)
 print(overtime_conclusion.params)
 print(nxt_asking_price.to_message())
 
-# KRX/NXT no-trade probe plan JSONL
-from kispy.domestic_stock.probe import write_krx_nxt_no_trade_probe_plan
-
-write_krx_nxt_no_trade_probe_plan(
-    log_path="logs/krx_nxt_no_trade_probe.jsonl",
-    quote_api=client.domestic_stock.quote,
-    realtime_api=client.domestic_stock.realtime,
-    stock_code="005930",
-)
-
 # 일별 시세 조회
 history = client.domestic_stock.quote.get_stock_price_history(
     stock_code="005930",
