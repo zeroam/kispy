@@ -64,7 +64,7 @@ class QuoteAPI(BaseAPI):
 
     def prepare_after_hour_balance(
         self,
-        rank_sort: str = "1",
+        rank_sort: str,
         market_code: str = "0000",
         tr_cont: str = "",
     ) -> PreparedDomesticQuoteRequest:
@@ -87,7 +87,7 @@ class QuoteAPI(BaseAPI):
             },
         )
 
-    def get_after_hour_balance(self, rank_sort: str = "1", market_code: str = "0000") -> list[dict]:
+    def get_after_hour_balance(self, rank_sort: str, market_code: str = "0000") -> list[dict]:
         """국내주식 시간외잔량 순위[v1_국내주식-093]."""
         request = self.prepare_after_hour_balance(rank_sort=rank_sort, market_code=market_code)
         data = self._send_prepared_quote_request(request)

@@ -42,8 +42,8 @@ def test_get_overtime_asking_price_sends_prepared_request(monkeypatch):
     assert captured["params"]["FID_INPUT_ISCD"] == "005930"
 
 
-def test_prepare_after_hour_balance_request_defaults_to_preopen_rank():
-    request = make_quote_api().prepare_after_hour_balance()
+def test_prepare_after_hour_balance_request_uses_explicit_rank_sort():
+    request = make_quote_api().prepare_after_hour_balance(rank_sort="1")
 
     assert request.method == "get"
     assert request.path == "uapi/domestic-stock/v1/ranking/after-hour-balance"
@@ -72,7 +72,7 @@ def test_get_after_hour_balance_sends_preopen_rank_request(monkeypatch):
 
     monkeypatch.setattr(api, "_request", fake_request)
 
-    response = api.get_after_hour_balance()
+    response = api.get_after_hour_balance(rank_sort="1")
 
     assert response == [{"hts_kor_isnm": "삼성전자"}]
     assert captured["headers"]["tr_id"] == "FHPST01760000"

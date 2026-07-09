@@ -47,17 +47,17 @@ result = client.domestic_stock.order.buy(
     price=70000,  # 주문가격
 )
 
-# KRX/NXT 주문 payload dry-run
-krx_preopen_buy = client.domestic_stock.order.prepare_cash_order(
+# 국내주식 현금주문 payload 준비
+cash_order = client.domestic_stock.order.prepare_cash_order(
     stock_code="005930",
     side="buy",
-    quantity=1,
-    price=0,
+    quantity=10,
+    price=70000,
     exchange="KRX",
-    order_type="05",  # 장전 시간외
 )
 
-nxt_sell = client.domestic_stock.order.prepare_cash_order(
+# 거래소 구분이 필요한 주문은 KRX / NXT / SOR 중 하나를 명시할 수 있습니다.
+nxt_order = client.domestic_stock.order.prepare_cash_order(
     stock_code="005930",
     side="sell",
     quantity=1,
@@ -65,27 +65,26 @@ nxt_sell = client.domestic_stock.order.prepare_cash_order(
     exchange="NXT",
 )
 
-reserved_krx_preopen_buy = client.domestic_stock.order.prepare_reservation_order(
+reservation_order = client.domestic_stock.order.prepare_reservation_order(
     stock_code="005930",
     side="buy",
     quantity=1,
-    price=0,
-    order_type="05",  # 장전 시간외
+    price=70000,
 )
 
 # 로그에는 계좌번호를 가린 payload만 남기세요.
-print(krx_preopen_buy.redacted_body())
+print(cash_order.redacted_body())
 
-# KRX/NXT 시장 데이터 no-trade dry-run
+# 국내주식 시간외/NXT 시장 데이터 request 준비
 overtime_quote = client.domestic_stock.quote.prepare_overtime_asking_price("005930")
-preopen_balance_rank = client.domestic_stock.quote.prepare_after_hour_balance()
+after_hour_balance_rank = client.domestic_stock.quote.prepare_after_hour_balance(rank_sort="1")
 overtime_conclusion = client.domestic_stock.quote.prepare_time_overtime_conclusion("005930")
 nxt_asking_price = client.domestic_stock.realtime.prepare_nxt_asking_price_subscription("005930")
 nxt_trade = client.domestic_stock.realtime.prepare_nxt_trade_subscription("005930")
 nxt_market_status = client.domestic_stock.realtime.prepare_nxt_market_status_subscription("005930")
 
 print(overtime_quote.params)
-print(preopen_balance_rank.params)
+print(after_hour_balance_rank.params)
 print(overtime_conclusion.params)
 print(nxt_asking_price.to_message())
 
